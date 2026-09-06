@@ -1,6 +1,5 @@
 using RaceNetShowdown.Server.Data;
 using RaceNetShowdown.Server.Infrastructure;
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -32,7 +31,11 @@ internal static class Grid2EgoNetPayloads
     ];
 
     private static readonly GridAutoSportChallengeRace[] GridAutosportChallengeRaces = [
-        new(5077, false, 2, 40, 374, 0, 408, 4, 0, 2, 48, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333)
+        new(5077, false, GridAutosportDisciplineID.Touring, 40, 374, 0, 408, 4, 0, 2, 48, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(5078, false, GridAutosportDisciplineID.Endurance, 40, 374, 0, 408, 4, 0, 2, 77, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(5078, false, GridAutosportDisciplineID.Openwheel, 40, 374, 0, 408, 4, 0, 2, 77, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(5078, false, GridAutosportDisciplineID.Street, 40, 374, 0, 408, 4, 0, 2, 77, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(5078, false, GridAutosportDisciplineID.Tuner, 40, 374, 0, 408, 4, 0, 2, 77, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
     ];
 
     private static readonly Grid2GlobalRace[] PreviousGlobalRaces =
@@ -265,7 +268,7 @@ internal static class Grid2EgoNetPayloads
         return EgoNetBinary.DictValue(
             EgoNetBinary.Si64("RaceNetId", race.RaceNetId),
             EgoNetBinary.Bool("HigherIsBetter", race.HigherIsBetter),
-            EgoNetBinary.Si32("DisciplineId", race.DisciplineId),
+            EgoNetBinary.Si32("DisciplineId", (int)race.DisciplineId),
             EgoNetBinary.Si32("LocationId", race.LocationId),
             EgoNetBinary.Si32("TrackModelId", race.TrackModelId),
             EgoNetBinary.Si32("TrackModelDlcId", race.TrackModelDlcId),
@@ -344,42 +347,6 @@ internal static class Grid2EgoNetPayloads
             EgoNetBinary.Si64("RaceId", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
     }
 
-    private static byte[] BuildChallengeRaceId()
-    {
-        return EgoNetBinary.Dictionary(
-            EgoNetBinary.Si64("RaceNetId", 798),
-            EgoNetBinary.Tutc("Expires", DateTimeOffset.UtcNow.AddDays(7)),
-            EgoNetBinary.Vector(
-                "Races",
-                [
-                    EgoNetBinary.DictValue(
-                        EgoNetBinary.Si64("RaceNetId", 5077),
-                        EgoNetBinary.Bool("HigherIsBetter", false),
-                        EgoNetBinary.Si32("DisciplineId", 2),
-                        EgoNetBinary.Si32("LocationId", 40),
-                        EgoNetBinary.Si32("TrackModelId", 374),
-                        EgoNetBinary.Si32("TrackModelDlcId", 0),
-                        EgoNetBinary.Si32("ConditionsId", 408),
-                        EgoNetBinary.Si32("RaceTypeId", 4),
-                        EgoNetBinary.Si64("RaceDuration", 0),
-                        EgoNetBinary.Si32("VehicleTierId", 2),
-                        EgoNetBinary.Si32("VehicleClassId", 48),
-                        EgoNetBinary.Si32("VehicleId", 0),
-                        EgoNetBinary.Si32("VehicleDlcId", 0),
-                        EgoNetBinary.Bool("SpecialRace", false),
-                        EgoNetBinary.Si64("GhostSlotId", 1),
-                        EgoNetBinary.Si32("Rank", 61),
-                        EgoNetBinary.Si64("PersonalBest", 98112),
-                        EgoNetBinary.Si64("PlatinumTarget", 95776),
-                        EgoNetBinary.Si64("GoldTarget", 101373),
-                        EgoNetBinary.Si64("SilverTarget", 107599),
-                        EgoNetBinary.Si64("BronzeTarget", 116333)
-                    )
-                ]
-            )
-        );
-    }
-
     private static byte[] BuildGhostDownload()
     {
         return EgoNetBinary.Dictionary(
@@ -421,7 +388,7 @@ internal static class Grid2EgoNetPayloads
     private sealed record GridAutoSportChallengeRace(
         long RaceNetId,
         bool HigherIsBetter,
-        int DisciplineId,
+        GridAutosportDisciplineID DisciplineId,
         int LocationId,
         int TrackModelId,
         int TrackModelDlcId,
@@ -441,4 +408,13 @@ internal static class Grid2EgoNetPayloads
         long SilverTarget,
         long BronzeTarget
     );
+
+    private enum GridAutosportDisciplineID
+    {
+        Touring = 2,
+        Endurance = 3,
+        Openwheel = 4,
+        Tuner = 5,
+        Street = 6
+    }
 }

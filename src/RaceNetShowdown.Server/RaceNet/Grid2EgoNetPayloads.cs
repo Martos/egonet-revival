@@ -1,5 +1,6 @@
 using RaceNetShowdown.Server.Data;
 using RaceNetShowdown.Server.Infrastructure;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -86,6 +87,8 @@ internal static class Grid2EgoNetPayloads
             "Video.PollQueue" => Empty(headers),
             "Video.Upload" => Empty(headers),
             "VipPassTrial.ProceedWithTrial" => Empty(headers),
+            "RaceNetDisciplineChallenge.GetEvent" => Html(BuildChallengeRaceId(), headers),
+            "RaceNetDisciplineChallenge.GetRanks" => Empty(headers),
             _ => null
         };
     }
@@ -298,6 +301,42 @@ internal static class Grid2EgoNetPayloads
     {
         return EgoNetBinary.Dictionary(
             EgoNetBinary.Si64("RaceId", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+    }
+
+    private static byte[] BuildChallengeRaceId()
+    {
+        return EgoNetBinary.Dictionary(
+            EgoNetBinary.Si64("RaceNetId", 798),
+            EgoNetBinary.Tutc("Expires", DateTimeOffset.UtcNow.AddDays(7)),
+            EgoNetBinary.Vector(
+                "Races",
+                [
+                    EgoNetBinary.DictValue(
+                        EgoNetBinary.Si64("RaceNetId", 5077),
+                        EgoNetBinary.Bool("HigherIsBetter", false),
+                        EgoNetBinary.Si32("DisciplineId", 2),
+                        EgoNetBinary.Si32("LocationId", 40),
+                        EgoNetBinary.Si32("TrackModelId", 374),
+                        EgoNetBinary.Si32("TrackModelDlcId", 0),
+                        EgoNetBinary.Si32("ConditionsId", 408),
+                        EgoNetBinary.Si32("RaceTypeId", 4),
+                        EgoNetBinary.Si64("RaceDuration", 0),
+                        EgoNetBinary.Si32("VehicleTierId", 2),
+                        EgoNetBinary.Si32("VehicleClassId", 48),
+                        EgoNetBinary.Si32("VehicleId", 0),
+                        EgoNetBinary.Si32("VehicleDlcId", 0),
+                        EgoNetBinary.Bool("SpecialRace", false),
+                        EgoNetBinary.Si64("GhostSlotId", 1),
+                        EgoNetBinary.Si32("Rank", 61),
+                        EgoNetBinary.Si64("PersonalBest", 98112),
+                        EgoNetBinary.Si64("PlatinumTarget", 95776),
+                        EgoNetBinary.Si64("GoldTarget", 101373),
+                        EgoNetBinary.Si64("SilverTarget", 107599),
+                        EgoNetBinary.Si64("BronzeTarget", 116333)
+                    )
+                ]
+            )
+        );
     }
 
     private static byte[] BuildGhostDownload()

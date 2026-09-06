@@ -16,7 +16,12 @@ var gameProfiles = new Dictionary<string, (string DisplayName, string DefaultGam
         "GRID 2",
         @"C:\Program Files (x86)\Steam\steamapps\common\grid 2",
         ["grid2.exe", "grid2_avx.exe"],
-        ["grid2", "grid2_avx"])
+        ["grid2", "grid2_avx"]),
+    ["grid-autosport"] = (
+        "GRID Autosport",
+        @"C:\Program Files (x86)\Steam\steamapps\common\GRID Autosport",
+        ["GRIDAutosport.exe", "GRIDAutosport_avx.exe"],
+        ["GRIDAutosport", "GRIDAutosport_avx"])
 };
 
 var command = args.Length > 0 ? args[0].Trim().ToLowerInvariant() : "status";

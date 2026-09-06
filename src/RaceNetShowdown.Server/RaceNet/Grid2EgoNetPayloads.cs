@@ -31,11 +31,11 @@ internal static class Grid2EgoNetPayloads
     ];
 
     private static readonly GridAutoSportChallengeRace[] GridAutosportChallengeRaces = [
-        new(1, false, GridAutosportDisciplineID.Touring, 40, 374, 0, 408, 4, 0, 2, GridAutosportVehicleClassID.CatATouring, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
-        new(2, false, GridAutosportDisciplineID.Endurance, 40, 374, 0, 408, 4, 0, 2, GridAutosportVehicleClassID.EnduranceGtGroup1, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
-        new(3, false, GridAutosportDisciplineID.Openwheel, 40, 374, 0, 408, 4, 0, 2, GridAutosportVehicleClassID.EnduranceGtGroup1, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
-        new(4, false, GridAutosportDisciplineID.Street, 40, 374, 0, 408, 4, 0, 2, GridAutosportVehicleClassID.EnduranceGtGroup1, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
-        new(5, false, GridAutosportDisciplineID.Tuner, 40, 374, 0, 408, 4, 0, 2, GridAutosportVehicleClassID.EnduranceGtGroup1, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(1, false, GridAutosportDisciplineID.Touring, 40, 374, 0, 408, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.CatATouring, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
+        new(2, false, GridAutosportDisciplineID.Endurance, 40, 374, 0, 408, GridAutosportRaceType.Endurance, 0, -1, GridAutosportVehicleClassID.EnduranceGtGroup1, 0, 0, true, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(3, false, GridAutosportDisciplineID.Openwheel, 40, 374, 0, 408, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.FormulaA, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(4, false, GridAutosportDisciplineID.Street, 40, 374, 0, 408, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.HotHatch, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
+        new(5, false, GridAutosportDisciplineID.Tuner, 40, 374, 0, 408, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.Modified, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333),
     ];
 
     private static readonly Grid2GlobalRace[] PreviousGlobalRaces =
@@ -273,7 +273,7 @@ internal static class Grid2EgoNetPayloads
             EgoNetBinary.Si32("TrackModelId", race.TrackModelId),
             EgoNetBinary.Si32("TrackModelDlcId", race.TrackModelDlcId),
             EgoNetBinary.Si32("ConditionsId", race.ConditionsId),
-            EgoNetBinary.Si32("RaceTypeId", race.RaceTypeId),
+            EgoNetBinary.Si32("RaceTypeId", (int)race.RaceTypeId),
             EgoNetBinary.Si64("RaceDuration", race.RaceDuration),
             EgoNetBinary.Si32("VehicleTierId", race.VehicleTierId),
             EgoNetBinary.Si32("VehicleClassId", (int)race.VehicleClassId),
@@ -393,7 +393,7 @@ internal static class Grid2EgoNetPayloads
         int TrackModelId,
         int TrackModelDlcId,
         int ConditionsId,
-        int RaceTypeId,
+        GridAutosportRaceType RaceTypeId,
         long RaceDuration,
         int VehicleTierId,
         GridAutosportVehicleClassID VehicleClassId,
@@ -488,5 +488,20 @@ internal static class Grid2EgoNetPayloads
         CuMazda787bCup2 = 133,
         CuFordGt40Cup2 = 135,
         CuShelbyCup2 = 136
+    }
+
+    private enum GridAutosportRaceType
+    {
+        Race = 2,
+        TimeAttack = 4,
+        Drift = 7,
+        Eliminator = 14,
+        Overtake = 17,
+        Checkpoint = 22,
+        Endurance = 23,
+        Drag = 32,
+        TimeTrial = 34,
+        DemoDerby = 35,
+        Sprint = 38
     }
 }

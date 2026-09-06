@@ -824,6 +824,6 @@ public sealed class RaceNetResponder
 
     private static bool IsGrid2RequestPath(string path)
     {
-        return path.Contains("grid2", StringComparison.OrdinalIgnoreCase);
+        return path.Contains("grid2", StringComparison.OrdinalIgnoreCase) || path.Contains("/rp8/steam/1.0/", StringComparison.OrdinalIgnoreCase);
     }
 }

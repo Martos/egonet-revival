@@ -31,6 +31,10 @@ internal static class Grid2EgoNetPayloads
         new(6_290, true, 33, 408, 0, 361, 7, 83_000, 4, -1, -1, 0, false, 9, 280_000_000, 390)
     ];
 
+    private static readonly GridAutoSportChallengeRace[] GridAutosportChallengeRaces = [
+        new(5077, false, 2, 40, 374, 0, 408, 4, 0, 2, 48, 0, 0, false, 1, 61, 98112, 95776, 101373, 107599, 116333)
+    ];
+
     private static readonly Grid2GlobalRace[] PreviousGlobalRaces =
     [
         new(6_264, true, 25, 322, 0, 319, 22, 6, 4, -1, -1, 0, false, -1, 10_000_000, 390),
@@ -87,7 +91,7 @@ internal static class Grid2EgoNetPayloads
             "Video.PollQueue" => Empty(headers),
             "Video.Upload" => Empty(headers),
             "VipPassTrial.ProceedWithTrial" => Empty(headers),
-            "RaceNetDisciplineChallenge.GetEvent" => Html(BuildChallengeRaceId(), headers),
+            "RaceNetDisciplineChallenge.GetEvent" => Html(BuildChallengeRaces(), headers),
             "RaceNetDisciplineChallenge.GetRanks" => Empty(headers),
             _ => null
         };
@@ -223,6 +227,16 @@ internal static class Grid2EgoNetPayloads
                 "Races",
                 PreviousGlobalRaces.Select(BuildGlobalRace).ToArray()));
     }
+    private static byte[] BuildChallengeRaces()
+    {
+        return EgoNetBinary.Dictionary(
+            EgoNetBinary.Si64("RaceNetId", 798),
+            EgoNetBinary.Tutc("Expires", DateTimeOffset.UtcNow.AddDays(7)),
+            EgoNetBinary.Vector(
+                "Races",
+                GridAutosportChallengeRaces.Select(BuildChallengeRace).ToArray()));
+    }
+
 
     private static Action<BinaryWriter> BuildGlobalRace(Grid2GlobalRace race)
     {
@@ -244,6 +258,33 @@ internal static class Grid2EgoNetPayloads
             EgoNetBinary.Vector(
                 "Leaderboard",
                 BuildGlobalLeaderboard(race)));
+    }
+
+    private static Action<BinaryWriter> BuildChallengeRace(GridAutoSportChallengeRace race)
+    {
+        return EgoNetBinary.DictValue(
+            EgoNetBinary.Si64("RaceNetId", race.RaceNetId),
+            EgoNetBinary.Bool("HigherIsBetter", race.HigherIsBetter),
+            EgoNetBinary.Si32("DisciplineId", race.DisciplineId),
+            EgoNetBinary.Si32("LocationId", race.LocationId),
+            EgoNetBinary.Si32("TrackModelId", race.TrackModelId),
+            EgoNetBinary.Si32("TrackModelDlcId", race.TrackModelDlcId),
+            EgoNetBinary.Si32("ConditionsId", race.ConditionsId),
+            EgoNetBinary.Si32("RaceTypeId", race.RaceTypeId),
+            EgoNetBinary.Si64("RaceDuration", race.RaceDuration),
+            EgoNetBinary.Si32("VehicleTierId", race.VehicleTierId),
+            EgoNetBinary.Si32("VehicleClassId", race.VehicleClassId),
+            EgoNetBinary.Si32("VehicleId", race.VehicleId),
+            EgoNetBinary.Si32("VehicleDlcId", race.VehicleDlcId),
+            EgoNetBinary.Bool("SpecialRace", race.SpecialRace),
+            EgoNetBinary.Si64("GhostSlotId", race.GhostSlotId),
+            EgoNetBinary.Si32("Rank", race.Rank),
+            EgoNetBinary.Si64("PersonalBest", race.PersonalBest),
+            EgoNetBinary.Si64("PlatinumTarget", race.PlatinumTarget),
+            EgoNetBinary.Si64("GoldTarget", race.GoldTarget),
+            EgoNetBinary.Si64("SilverTarget", race.SilverTarget),
+            EgoNetBinary.Si64("BronzeTarget", race.BronzeTarget)
+        );
     }
 
     private static Action<BinaryWriter>[] BuildGlobalLeaderboard(Grid2GlobalRace race)
@@ -376,4 +417,28 @@ internal static class Grid2EgoNetPayloads
         long GhostSlotId,
         long PersonalBest,
         int BestVehicleId);
+
+    private sealed record GridAutoSportChallengeRace(
+        long RaceNetId,
+        bool HigherIsBetter,
+        int DisciplineId,
+        int LocationId,
+        int TrackModelId,
+        int TrackModelDlcId,
+        int ConditionsId,
+        int RaceTypeId,
+        long RaceDuration,
+        int VehicleTierId,
+        int VehicleClassId,
+        int VehicleId,
+        int VehicleDlcId,
+        bool SpecialRace,
+        long GhostSlotId,
+        int Rank,
+        long PersonalBest,
+        long PlatinumTarget,
+        long GoldTarget,
+        long SilverTarget,
+        long BronzeTarget
+    );
 }

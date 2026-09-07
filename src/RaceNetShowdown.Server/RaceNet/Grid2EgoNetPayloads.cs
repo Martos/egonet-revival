@@ -32,11 +32,12 @@ internal static class Grid2EgoNetPayloads
     ];
 
     private static readonly GridAutoSportChallengeRace[] GridAutosportChallengeRaces = [
-        new(1, false, GridAutosportDisciplineID.Touring, GridAutosportTrackModelConditions.SpaRoute0Night, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.CatATouring, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
+        new(1, false, GridAutosportDisciplineID.Touring, GridAutosportTrackModelConditions.OkutamaP2pRoute0Day, GridAutosportRaceType.Sprint, 0, -1, GridAutosportVehicleClassID.CatATouring, 0, 0, false, 1, -1, 0, 95776, 101373, 107599, 116333),
         new(2, false, GridAutosportDisciplineID.Endurance, GridAutosportTrackModelConditions.SanFranciscoRoute0Day, GridAutosportRaceType.Endurance, 0, -1, GridAutosportVehicleClassID.EnduranceGtGroup1, 0, 0, true, 1, -1, 98112, 95776, 101373, 107599, 116333),
         new(3, false, GridAutosportDisciplineID.Openwheel, GridAutosportTrackModelConditions.RedBullRingRoute1Day, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.FormulaA, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
         new(4, false, GridAutosportDisciplineID.Street, GridAutosportTrackModelConditions.DubaiRoute0Day, GridAutosportRaceType.Race, 0, -1, GridAutosportVehicleClassID.HotHatch, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
         new(5, false, GridAutosportDisciplineID.Tuner, GridAutosportTrackModelConditions.RedBullRingRoute1Day, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.Modified, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
+        new(6, false, GridAutosportDisciplineID.Endurance, GridAutosportTrackModelConditions.OkutamaP2pRoute0Day, GridAutosportRaceType.Sprint, 0, -1, GridAutosportVehicleClassID.EnduranceGtGroup2, 0, 0, false, 1, -1, 0, 95776, 101373, 107599, 116333),
     ];
 
     private static readonly Grid2GlobalRace[] PreviousGlobalRaces =

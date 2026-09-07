@@ -98,6 +98,7 @@ public static class GridAutosportData
         DemoDerby = 35,
         Sprint = 38
     }
+
     public enum GridAutosportLocation
     {
         Various = 11,
@@ -649,6 +650,42 @@ public static class GridAutosportData
         {
             (GridAutosportTrackModel.DetroitRoute8, newList(GridAutosportTrackModelConditions.DetroitRoute8Day)),
             (GridAutosportTrackModel.DetroitRoute9, newList(GridAutosportTrackModelConditions.DetroitRoute9Day))
+        },
+        [GridAutosportLocation.California] = new()
+        {
+            (GridAutosportTrackModel.CaliforniaRoute0, newList(GridAutosportTrackModelConditions.CaliforniaRoute0Day)),
+            (GridAutosportTrackModel.CaliforniaRoute1, newList(GridAutosportTrackModelConditions.CaliforniaRoute1Day)),
+            (GridAutosportTrackModel.CaliforniaRoute2, newList(GridAutosportTrackModelConditions.CaliforniaRoute2Day)),
+            (GridAutosportTrackModel.CaliforniaRoute3, newList(GridAutosportTrackModelConditions.CaliforniaRoute3Day)),
+            (GridAutosportTrackModel.CaliforniaRoute4, newList(GridAutosportTrackModelConditions.CaliforniaRoute4Day)),
+            (GridAutosportTrackModel.CaliforniaRoute5, newList(GridAutosportTrackModelConditions.CaliforniaRoute5Day))
+        },
+        [GridAutosportLocation.CoteDAzur] = new()
+        {
+            (GridAutosportTrackModel.CoteDAzurRoute0, newList(GridAutosportTrackModelConditions.CoteDAzurRoute0Day)),
+            (GridAutosportTrackModel.CoteDAzurRoute1, newList(GridAutosportTrackModelConditions.CoteDAzurRoute1Day)),
+            (GridAutosportTrackModel.CoteDAzurRoute2, newList(GridAutosportTrackModelConditions.CoteDAzurRoute2Day)),
+            (GridAutosportTrackModel.CoteDAzurRoute3, newList(GridAutosportTrackModelConditions.CoteDAzurRoute3Day)),
+            (GridAutosportTrackModel.CoteDAzurRoute4, newList(GridAutosportTrackModelConditions.CoteDAzurRoute4Day)),
+            (GridAutosportTrackModel.CoteDAzurRoute5, newList(GridAutosportTrackModelConditions.CoteDAzurRoute5Day))
+        },
+        [GridAutosportLocation.HongKong] = new()
+        {
+            (GridAutosportTrackModel.HongKongRoute0, newList(GridAutosportTrackModelConditions.HongKongRoute0Day)),
+            (GridAutosportTrackModel.HongKongRoute1, newList(GridAutosportTrackModelConditions.HongKongRoute1Day)),
+            (GridAutosportTrackModel.HongKongRoute2, newList(GridAutosportTrackModelConditions.HongKongRoute2Day)),
+            (GridAutosportTrackModel.HongKongRoute3, newList(GridAutosportTrackModelConditions.HongKongRoute3Day)),
+            (GridAutosportTrackModel.HongKongRoute4, newList(GridAutosportTrackModelConditions.HongKongRoute4Day)),
+            (GridAutosportTrackModel.HongKongRoute5, newList(GridAutosportTrackModelConditions.HongKongRoute5Day))
+        },
+        [GridAutosportLocation.Okutama] = new()
+        {
+            (GridAutosportTrackModel.OkutamaP2pRoute0, newList(GridAutosportTrackModelConditions.OkutamaP2pRoute0Day)),
+            (GridAutosportTrackModel.OkutamaP2pRoute1, newList(GridAutosportTrackModelConditions.OkutamaP2pRoute1Day)),
+            (GridAutosportTrackModel.OkutamaP2pRoute2, newList(GridAutosportTrackModelConditions.OkutamaP2pRoute2Day)),
+            (GridAutosportTrackModel.OkutamaP2pRoute3, newList(GridAutosportTrackModelConditions.OkutamaP2pRoute3Day)),
+            (GridAutosportTrackModel.OkutamaP2pRoute4, newList(GridAutosportTrackModelConditions.OkutamaP2pRoute4Day)),
+            (GridAutosportTrackModel.OkutamaP2pRoute5, newList(GridAutosportTrackModelConditions.OkutamaP2pRoute5Day))
         }
     };
 

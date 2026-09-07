@@ -2,7 +2,6 @@ using RaceNetShowdown.Server.Data;
 using RaceNetShowdown.Server.Infrastructure;
 using System.Security.Cryptography;
 using System.Text;
-using static GridAutosportData;
 
 namespace RaceNetShowdown.Server.RaceNet;
 
@@ -29,15 +28,6 @@ internal static class Grid2EgoNetPayloads
         new(6_288, true, 31, 357, 0, 327, 17, 6, 2, -1, -1, 0, false, 7, 91_400_000, 131_331),
         new(6_289, false, 31, 357, 0, 327, 24, 5, 4, -1, -1, 0, false, 8, 82_020_000, 367),
         new(6_290, true, 33, 408, 0, 361, 7, 83_000, 4, -1, -1, 0, false, 9, 280_000_000, 390)
-    ];
-
-    private static readonly GridAutoSportChallengeRace[] GridAutosportChallengeRaces = [
-        new(1, false, GridAutosportDisciplineID.Touring, GridAutosportTrackModelConditions.OkutamaP2pRoute0Day, GridAutosportRaceType.Sprint, 0, -1, GridAutosportVehicleClassID.CatATouring, 0, 0, false, 1, -1, 0, 95776, 101373, 107599, 116333),
-        new(2, false, GridAutosportDisciplineID.Endurance, GridAutosportTrackModelConditions.SanFranciscoRoute0Day, GridAutosportRaceType.Endurance, 0, -1, GridAutosportVehicleClassID.EnduranceGtGroup1, 0, 0, true, 1, -1, 98112, 95776, 101373, 107599, 116333),
-        new(3, false, GridAutosportDisciplineID.Openwheel, GridAutosportTrackModelConditions.RedBullRingRoute1Day, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.FormulaA, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
-        new(4, false, GridAutosportDisciplineID.Street, GridAutosportTrackModelConditions.DubaiRoute0Day, GridAutosportRaceType.Race, 0, -1, GridAutosportVehicleClassID.HotHatch, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
-        new(5, false, GridAutosportDisciplineID.Tuner, GridAutosportTrackModelConditions.RedBullRingRoute1Day, GridAutosportRaceType.TimeAttack, 0, -1, GridAutosportVehicleClassID.Modified, 0, 0, false, 1, -1, 98112, 95776, 101373, 107599, 116333),
-        new(6, false, GridAutosportDisciplineID.Endurance, GridAutosportTrackModelConditions.OkutamaP2pRoute0Day, GridAutosportRaceType.Sprint, 0, -1, GridAutosportVehicleClassID.EnduranceGtGroup2, 0, 0, false, 1, -1, 0, 95776, 101373, 107599, 116333),
     ];
 
     private static readonly Grid2GlobalRace[] PreviousGlobalRaces =
@@ -96,8 +86,6 @@ internal static class Grid2EgoNetPayloads
             "Video.PollQueue" => Empty(headers),
             "Video.Upload" => Empty(headers),
             "VipPassTrial.ProceedWithTrial" => Empty(headers),
-            "RaceNetDisciplineChallenge.GetEvent" => Html(BuildChallengeRaces(), headers),
-            "RaceNetDisciplineChallenge.GetRanks" => Empty(headers),
             _ => null
         };
     }
@@ -233,16 +221,6 @@ internal static class Grid2EgoNetPayloads
                 PreviousGlobalRaces.Select(BuildGlobalRace).ToArray()));
     }
 
-    private static byte[] BuildChallengeRaces()
-    {
-        return EgoNetBinary.Dictionary(
-            EgoNetBinary.Si64("RaceNetId", 798),
-            EgoNetBinary.Tutc("Expires", DateTimeOffset.UtcNow.AddDays(7)),
-            EgoNetBinary.Vector(
-                "Races",
-                GridAutosportChallengeRaces.Select(BuildChallengeRace).ToArray()));
-    }
-
     private static Action<BinaryWriter> BuildGlobalRace(Grid2GlobalRace race)
     {
         return EgoNetBinary.DictValue(
@@ -263,33 +241,6 @@ internal static class Grid2EgoNetPayloads
             EgoNetBinary.Vector(
                 "Leaderboard",
                 BuildGlobalLeaderboard(race)));
-    }
-
-    private static Action<BinaryWriter> BuildChallengeRace(GridAutoSportChallengeRace race)
-    {
-        return EgoNetBinary.DictValue(
-            EgoNetBinary.Si64("RaceNetId", race.RaceNetId),
-            EgoNetBinary.Bool("HigherIsBetter", race.HigherIsBetter),
-            EgoNetBinary.Si32("DisciplineId", (int)race.DisciplineId),
-            EgoNetBinary.Si32("LocationId", (int)race.LocationId),
-            EgoNetBinary.Si32("TrackModelId", (int)race.TrackModelId),
-            EgoNetBinary.Si32("TrackModelDlcId", race.TrackModelDlcId),
-            EgoNetBinary.Si32("ConditionsId", (int)race.ConditionsId),
-            EgoNetBinary.Si32("RaceTypeId", (int)race.RaceTypeId),
-            EgoNetBinary.Si64("RaceDuration", race.RaceDuration),
-            EgoNetBinary.Si32("VehicleTierId", race.VehicleTierId),
-            EgoNetBinary.Si32("VehicleClassId", (int)race.VehicleClassId),
-            EgoNetBinary.Si32("VehicleId", race.VehicleId),
-            EgoNetBinary.Si32("VehicleDlcId", race.VehicleDlcId),
-            EgoNetBinary.Bool("SpecialRace", race.SpecialRace),
-            EgoNetBinary.Si64("GhostSlotId", race.GhostSlotId),
-            EgoNetBinary.Si32("Rank", race.Rank),
-            EgoNetBinary.Si64("PersonalBest", race.PersonalBest),
-            EgoNetBinary.Si64("PlatinumTarget", race.PlatinumTarget),
-            EgoNetBinary.Si64("GoldTarget", race.GoldTarget),
-            EgoNetBinary.Si64("SilverTarget", race.SilverTarget),
-            EgoNetBinary.Si64("BronzeTarget", race.BronzeTarget)
-        );
     }
 
     private static Action<BinaryWriter>[] BuildGlobalLeaderboard(Grid2GlobalRace race)
@@ -386,73 +337,4 @@ internal static class Grid2EgoNetPayloads
         long GhostSlotId,
         long PersonalBest,
         int BestVehicleId);
-
-    private sealed record GridAutoSportChallengeRace(
-        long RaceNetId,
-        bool HigherIsBetter,
-        GridAutosportDisciplineID DisciplineId,
-        GridAutosportLocation LocationId,
-        GridAutosportTrackModel TrackModelId,
-        int TrackModelDlcId,
-        GridAutosportTrackModelConditions ConditionsId,
-        GridAutosportRaceType RaceTypeId,
-        long RaceDuration,
-        int VehicleTierId,
-        GridAutosportVehicleClassID VehicleClassId,
-        int VehicleId,
-        int VehicleDlcId,
-        bool SpecialRace,
-        long GhostSlotId,
-        int Rank,
-        long PersonalBest,
-        long PlatinumTarget,
-        long GoldTarget,
-        long SilverTarget,
-        long BronzeTarget
-    )
-    {
-        public GridAutoSportChallengeRace(
-            long raceNetId,
-            bool higherIsBetter,
-            GridAutosportDisciplineID disciplineId,
-            GridAutosportTrackModelConditions conditionsId,
-            GridAutosportRaceType raceTypeId,
-            long raceDuration,
-            int vehicleTierId,
-            GridAutosportVehicleClassID vehicleClassId,
-            int vehicleId,
-            int vehicleDlcId,
-            bool specialRace,
-            long ghostSlotId,
-            int rank,
-            long personalBest,
-            long platinumTarget,
-            long goldTarget,
-            long silverTarget,
-            long bronzeTarget
-        ) : this(
-            raceNetId,
-            higherIsBetter,
-            disciplineId,
-            conditionsId.GetTrackModel().GetLocation(),
-            conditionsId.GetTrackModel(),
-            0,
-            conditionsId,
-            raceTypeId,
-            raceDuration,
-            vehicleTierId,
-            vehicleClassId,
-            vehicleId,
-            vehicleDlcId,
-            specialRace,
-            ghostSlotId,
-            rank,
-            personalBest,
-            platinumTarget,
-            goldTarget,
-            silverTarget,
-            bronzeTarget
-        )
-        { }
-    }
 }

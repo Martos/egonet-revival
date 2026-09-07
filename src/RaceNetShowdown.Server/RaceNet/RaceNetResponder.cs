@@ -39,11 +39,12 @@ public sealed class RaceNetResponder
     {
         var path = request.Path.Value?.ToLowerInvariant() ?? "/";
         var isGrid2Request = IsGrid2RequestPath(path);
+        var isGridAutosportRequest = IsGridAutosportRequestPath(path);
         var egoNetFunction = request.Headers["X-EgoNet-Function"].ToString();
 
         if (!string.IsNullOrWhiteSpace(egoNetFunction))
         {
-            return BuildLocalEgoNetResponse(egoNetFunction, body, session, challengeSnapshot, isGrid2Request);
+            return BuildLocalEgoNetResponse(egoNetFunction, body, session, challengeSnapshot, isGrid2Request, isGridAutosportRequest);
         }
 
         if (path is "/" or "/health")
@@ -148,6 +149,7 @@ public sealed class RaceNetResponder
     {
         var path = request.Path.Value?.ToLowerInvariant() ?? "/";
         var isGrid2Request = IsGrid2RequestPath(path);
+        var isGridAutosportRequest = IsGridAutosportRequestPath(path);
         var egoNetFunction = request.Headers["X-EgoNet-Function"].ToString();
 
         if (!string.IsNullOrWhiteSpace(egoNetFunction))
@@ -159,7 +161,8 @@ public sealed class RaceNetResponder
                 challengeSnapshot,
                 store,
                 isGrid2Request,
-                cancellationToken);
+                cancellationToken,
+                isGridAutosportRequest);
         }
 
         if (path is "/" or "/health")
@@ -261,7 +264,8 @@ public sealed class RaceNetResponder
         RaceNetChallengeSnapshot? challengeSnapshot,
         IRaceNetStore store,
         bool isGrid2Request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool isGridAutosportRequest)
     {
         var normalized = functionName.Trim();
 
@@ -277,6 +281,15 @@ public sealed class RaceNetResponder
             if (grid2Response is not null)
             {
                 return grid2Response;
+            }
+        }
+
+        if (IsGridAutosport(isGridAutosportRequest))
+        {
+            var gridAutosportResponse = GridAutosportEgoNetPayloads.TryBuild(normalized, body, session, headers);
+            if (gridAutosportResponse is not null)
+            {
+                return gridAutosportResponse;
             }
         }
 
@@ -345,7 +358,8 @@ public sealed class RaceNetResponder
         CapturedBody body,
         RaceNetSessionInfo? session,
         RaceNetChallengeSnapshot? challengeSnapshot,
-        bool isGrid2Request)
+        bool isGrid2Request,
+        bool isGridAutosportRequest)
     {
         var normalized = functionName.Trim();
 
@@ -361,6 +375,15 @@ public sealed class RaceNetResponder
             if (grid2Response is not null)
             {
                 return grid2Response;
+            }
+        }
+
+        if (IsGridAutosport(isGridAutosportRequest))
+        {
+            var gridAutosportResponse = GridAutosportEgoNetPayloads.TryBuild(normalized, body, session, headers);
+            if (gridAutosportResponse is not null)
+            {
+                return gridAutosportResponse;
             }
         }
 
@@ -822,8 +845,18 @@ public sealed class RaceNetResponder
             string.Equals(Options.GameId, "grid-2", StringComparison.OrdinalIgnoreCase);
     }
 
+    private bool IsGridAutosport(bool isGridAutosportRequest)
+    {
+        return isGridAutosportRequest ||
+            string.Equals(Options.GameId, "grid-autosport", StringComparison.OrdinalIgnoreCase);
+    }
+    private static bool IsGridAutosportRequestPath(string path)
+    {
+        return path.Contains("/rp8/steam/1.0/", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool IsGrid2RequestPath(string path)
     {
-        return path.Contains("grid2", StringComparison.OrdinalIgnoreCase) || path.Contains("/rp8/steam/1.0/", StringComparison.OrdinalIgnoreCase);
+        return path.Contains("grid2", StringComparison.OrdinalIgnoreCase);
     }
 }

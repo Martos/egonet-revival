@@ -161,6 +161,17 @@ internal static class EgoNetBinary
         });
     }
 
+    public static EgoNetField DstrW(string name, string value)
+    {
+        return new EgoNetField(name, writer =>
+        {
+            WriteTag(writer, "dstrW");
+            var bytes = Encoding.UTF8.GetBytes(value);
+            writer.Write(bytes.Length);
+            writer.Write(bytes);
+        });
+    }
+
     public static EgoNetField Blob(string name, byte[] value)
     {
         return new EgoNetField(name, writer =>

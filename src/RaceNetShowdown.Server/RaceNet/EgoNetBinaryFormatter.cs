@@ -1,4 +1,6 @@
+using System;
 using System.Globalization;
+using System.IO;
 using System.Text;
 
 namespace RaceNetShowdown.Server.RaceNet;
@@ -72,6 +74,7 @@ internal static class EgoNetBinaryFormatter
                     break;
 
                 case "dstr":
+                case "dstrW":
                     ReadString(label, offset, depth);
                     break;
 
@@ -177,6 +180,20 @@ internal static class EgoNetBinaryFormatter
             Line(depth, $"{Offset(offset)} {label} length={length} value=\"{Escape(preview)}{suffix}\"");
         }
 
+        private void ReadWideString(string label, int offset, int depth)
+        {
+            var length = ReadInt32();
+            Ensure(length);
+            var value = Encoding.Unicode.GetString(bytes, _position, length);
+            _position += length;
+
+            var suffix = value.Length > StringPreviewLength ? "..." : string.Empty;
+            var preview = value.Length > StringPreviewLength
+                ? value[..StringPreviewLength]
+                : value;
+            Line(depth, $"{Offset(offset)} {label} length={length} value=\"{Escape(preview)}{suffix}\"");
+        }
+
         private void ReadBlob(string label, int offset, int depth)
         {
             var length = ReadInt32();
@@ -215,6 +232,13 @@ internal static class EgoNetBinaryFormatter
         {
             Ensure(4);
             var value = Encoding.ASCII.GetString(bytes, _position, 4);
+
+            if (value == "dstr" && _position + 4 < bytes.Length && bytes[_position + 4] == (byte)'W')
+            {
+                _position += 5;
+                return "dstrW";
+            }
+
             _position += 4;
             return value;
         }

@@ -179,7 +179,7 @@ internal static class GridAutosportEgoNetPayloads
         return EgoNetRequestParser.ReadTopLevelString(body, "Name") ??
             EgoNetRequestParser.ReadTopLevelString(body, "Username") ??
             session?.DisplayName ??
-            "GRID 2 Player";
+            "GRID A Player";
     }
 
     private static byte[] BuildGameData()
@@ -212,7 +212,18 @@ internal static class GridAutosportEgoNetPayloads
     private static byte[] BuildNewsFeed()
     {
         return EgoNetBinary.Dictionary(
-            EgoNetBinary.Vector("News"));
+            EgoNetBinary.Vector("News", [
+                EgoNetBinary.DictValue(
+                    EgoNetBinary.Si64("Id", 1823425844),
+                    EgoNetBinary.Tutc("ExpiresAt", DateTimeOffset.UtcNow.AddDays(7)),
+                    EgoNetBinary.Si64("OwnerId", 227622574521174749),
+                    EgoNetBinary.Dict("Metadata", [
+                        EgoNetBinary.Dstr("header", "Notification"),
+                        EgoNetBinary.DstrW("body", "Hello World"),
+                        EgoNetBinary.Ui08("type", 0)
+                    ])
+                )
+            ]));
     }
 
     private static byte[] BuildTermsAndConditions()

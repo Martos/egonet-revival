@@ -122,7 +122,11 @@ public static class GridAutosportData
         IstanbulPark = 55,
         SpaFrancorchamps = 56,
         Bathurst = 57,
-        Detroit = 59
+        Detroit = 59,
+        California = 60,
+        CoteDAzur = 61,
+        HongKong = 62,
+        Okutama = 63
     }
 
     public enum GridAutosportTrackModel
@@ -244,7 +248,31 @@ public static class GridAutosportData
         DetroitRoute8 = 524,
         DetroitRoute9 = 525,
         CallahanOvalRoute7 = 526,
-        YasMarinaRoute7 = 527
+        YasMarinaRoute7 = 527,
+        CaliforniaRoute0 = 532,
+        CaliforniaRoute1 = 533,
+        CaliforniaRoute2 = 534,
+        CaliforniaRoute3 = 535,
+        CaliforniaRoute4 = 536,
+        CaliforniaRoute5 = 537,
+        CoteDAzurRoute0 = 538,
+        CoteDAzurRoute1 = 539,
+        CoteDAzurRoute2 = 540,
+        CoteDAzurRoute3 = 541,
+        CoteDAzurRoute4 = 542,
+        CoteDAzurRoute5 = 543,
+        HongKongRoute0 = 544,
+        HongKongRoute1 = 545,
+        HongKongRoute2 = 546,
+        HongKongRoute3 = 547,
+        HongKongRoute4 = 548,
+        HongKongRoute5 = 549,
+        OkutamaP2pRoute0 = 550,
+        OkutamaP2pRoute1 = 551,
+        OkutamaP2pRoute2 = 552,
+        OkutamaP2pRoute3 = 553,
+        OkutamaP2pRoute4 = 554,
+        OkutamaP2pRoute5 = 555
     }
 
     public enum GridAutosportTrackModelConditions
@@ -406,7 +434,31 @@ public static class GridAutosportData
         OkutamaGpRoute0Night = 712,
         OkutamaGpRoute1Night = 713,
         OkutamaGpRoute3Night = 714,
-        OkutamaGpRoute4Night = 715
+        OkutamaGpRoute4Night = 715,
+        CaliforniaRoute0Day = 719,
+        CaliforniaRoute1Day = 720,
+        CaliforniaRoute2Day = 721,
+        CaliforniaRoute3Day = 722,
+        CaliforniaRoute4Day = 723,
+        CaliforniaRoute5Day = 724,
+        CoteDAzurRoute0Day = 725,
+        CoteDAzurRoute1Day = 726,
+        CoteDAzurRoute2Day = 727,
+        CoteDAzurRoute3Day = 728,
+        CoteDAzurRoute4Day = 729,
+        CoteDAzurRoute5Day = 730,
+        HongKongRoute0Day = 731,
+        HongKongRoute1Day = 732,
+        HongKongRoute2Day = 733,
+        HongKongRoute3Day = 734,
+        HongKongRoute4Day = 735,
+        HongKongRoute5Day = 736,
+        OkutamaP2pRoute0Day = 737,
+        OkutamaP2pRoute1Day = 738,
+        OkutamaP2pRoute2Day = 739,
+        OkutamaP2pRoute3Day = 740,
+        OkutamaP2pRoute4Day = 741,
+        OkutamaP2pRoute5Day = 742
     }
 
     public static readonly Dictionary<GridAutosportLocation, List<(GridAutosportTrackModel Track, List<GridAutosportTrackModelConditions> Conditions)>> LocationToTracksMap = new()

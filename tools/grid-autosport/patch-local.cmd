@@ -4,7 +4,7 @@ setlocal
 cd /d "%~dp0..\.."
 
 set "GAME_PATH=%~1"
-if "%GAME_PATH%"=="" set "GAME_PATH=C:\Users\DEV-1\Desktop\GRID Autosport Offline"
+if "%GAME_PATH%"=="" set "GAME_PATH=C:\Program Files (x86)\Steam\steamapps\common\GRID Autosport"
 
 echo EgoNet Revival - GRID Autosport local patch
 echo Game path: %GAME_PATH%

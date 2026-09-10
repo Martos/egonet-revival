@@ -284,7 +284,7 @@ public sealed class RaceNetResponder
             }
         }
 
-        if (IsGridAutosport(isGridAutosportRequest))
+        if (requestGame == RaceNetGame.GridAutosport)
         {
             var gridAutosportResponse = GridAutosportEgoNetPayloads.TryBuild(normalized, body, session, headers);
             if (gridAutosportResponse is not null)
@@ -377,7 +377,7 @@ public sealed class RaceNetResponder
             }
         }
 
-        if (IsGridAutosport(isGridAutosportRequest))
+        if (requestGame == RaceNetGame.GridAutosport)
         {
             var gridAutosportResponse = GridAutosportEgoNetPayloads.TryBuild(normalized, body, session, headers);
             if (gridAutosportResponse is not null)
@@ -843,7 +843,7 @@ public sealed class RaceNetResponder
         return ResolveRequestGame(request, body) switch
         {
             RaceNetGame.Grid2 => "grid-2",
-            _ => "dirt-showdown"
+            _ => "grid-autosport"
         };
     }
 
@@ -858,7 +858,7 @@ public sealed class RaceNetResponder
             return RaceNetGame.Grid2;
         }
 
-        return RaceNetGame.DirtShowdown;
+        return RaceNetGame.GridAutosport;
     }
 
     private bool IsGridAutosport(bool isGridAutosportRequest)
@@ -896,6 +896,7 @@ public sealed class RaceNetResponder
     private enum RaceNetGame
     {
         DirtShowdown,
-        Grid2
+        Grid2,
+        GridAutosport
     }
 }

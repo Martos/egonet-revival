@@ -23,6 +23,17 @@
       "installerExecutableAsset": "EgoNet Revival - GRID 2 Installer.exe"
     },
     {
+      "id": "grid-autosport",
+      "name": "GRID autosport",
+      "platform": "Steam / PC",
+      "status": "early-public-testing",
+      "packagePath": "games/grid-autosport",
+      "releaseTagPrefix": "grid-autosport-v",
+      "installerAsset": "install-grid-autosport-mod.cmd",
+      "installerProject": "games/grid-autosport/installer/GridAutosportModInstaller.csproj",
+      "installerExecutableAsset": "EgoNet Revival - GRID autosport Installer.exe"
+    },
+    {
       "id": "f1-2018",
       "name": "F1 2018",
       "platform": "Steam / PC",

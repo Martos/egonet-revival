@@ -38,13 +38,12 @@ public sealed class RaceNetResponder
         RaceNetChallengeSnapshot? challengeSnapshot)
     {
         var path = request.Path.Value?.ToLowerInvariant() ?? "/";
-        var isGrid2Request = IsGrid2RequestPath(path);
-        var isGridAutosportRequest = IsGridAutosportRequestPath(path);
+        var requestGame = ResolveRequestGame(request, body);
         var egoNetFunction = request.Headers["X-EgoNet-Function"].ToString();
 
         if (!string.IsNullOrWhiteSpace(egoNetFunction))
         {
-            return BuildLocalEgoNetResponse(egoNetFunction, body, session, challengeSnapshot, isGrid2Request, isGridAutosportRequest);
+            return BuildLocalEgoNetResponse(egoNetFunction, body, session, challengeSnapshot, requestGame);
         }
 
         if (path is "/" or "/health")
@@ -53,8 +52,10 @@ public sealed class RaceNetResponder
             {
                 ok = true,
                 service = "egonet-revival",
-                game = Options.GameId,
-                gameName = Options.GameName,
+                game = "multi-game",
+                gameName = "EgoNet Revival",
+                configuredFallbackGame = Options.GameId,
+                supportedGames = new[] { "dirt-showdown", "grid-2" },
                 discoveryMode = Options.DiscoveryMode,
                 time = DateTimeOffset.Now
             });
@@ -148,8 +149,7 @@ public sealed class RaceNetResponder
         CancellationToken cancellationToken)
     {
         var path = request.Path.Value?.ToLowerInvariant() ?? "/";
-        var isGrid2Request = IsGrid2RequestPath(path);
-        var isGridAutosportRequest = IsGridAutosportRequestPath(path);
+        var requestGame = ResolveRequestGame(request, body);
         var egoNetFunction = request.Headers["X-EgoNet-Function"].ToString();
 
         if (!string.IsNullOrWhiteSpace(egoNetFunction))
@@ -160,9 +160,8 @@ public sealed class RaceNetResponder
                 session,
                 challengeSnapshot,
                 store,
-                isGrid2Request,
-                cancellationToken,
-                isGridAutosportRequest);
+                requestGame,
+                cancellationToken);
         }
 
         if (path is "/" or "/health")
@@ -171,8 +170,10 @@ public sealed class RaceNetResponder
             {
                 ok = true,
                 service = "egonet-revival",
-                game = Options.GameId,
-                gameName = Options.GameName,
+                game = "multi-game",
+                gameName = "EgoNet Revival",
+                configuredFallbackGame = Options.GameId,
+                supportedGames = new[] { "dirt-showdown", "grid-2" },
                 discoveryMode = Options.DiscoveryMode,
                 time = DateTimeOffset.Now
             });
@@ -263,9 +264,8 @@ public sealed class RaceNetResponder
         RaceNetSessionInfo? session,
         RaceNetChallengeSnapshot? challengeSnapshot,
         IRaceNetStore store,
-        bool isGrid2Request,
-        CancellationToken cancellationToken,
-        bool isGridAutosportRequest)
+        RaceNetGame requestGame,
+        CancellationToken cancellationToken)
     {
         var normalized = functionName.Trim();
 
@@ -275,9 +275,9 @@ public sealed class RaceNetResponder
             ["X-EgoNet-SessionID"] = session?.SessionId ?? "local-racenet-session"
         };
 
-        if (IsGrid2(isGrid2Request))
+        if (requestGame == RaceNetGame.Grid2)
         {
-            var grid2Response = Grid2EgoNetPayloads.TryBuild(normalized, body, session, headers);
+            var grid2Response = await Grid2EgoNetPayloads.TryBuildAsync(normalized, body, session, headers, store, cancellationToken);
             if (grid2Response is not null)
             {
                 return grid2Response;
@@ -358,8 +358,7 @@ public sealed class RaceNetResponder
         CapturedBody body,
         RaceNetSessionInfo? session,
         RaceNetChallengeSnapshot? challengeSnapshot,
-        bool isGrid2Request,
-        bool isGridAutosportRequest)
+        RaceNetGame requestGame)
     {
         var normalized = functionName.Trim();
 
@@ -369,7 +368,7 @@ public sealed class RaceNetResponder
             ["X-EgoNet-SessionID"] = session?.SessionId ?? "local-racenet-session"
         };
 
-        if (IsGrid2(isGrid2Request))
+        if (requestGame == RaceNetGame.Grid2)
         {
             var grid2Response = Grid2EgoNetPayloads.TryBuild(normalized, body, session, headers);
             if (grid2Response is not null)
@@ -839,10 +838,27 @@ public sealed class RaceNetResponder
         int Attempts,
         bool Dominated);
 
-    private bool IsGrid2(bool isGrid2Request)
+    public string ResolveRequestGameId(HttpRequest request, CapturedBody body)
     {
-        return isGrid2Request ||
-            string.Equals(Options.GameId, "grid-2", StringComparison.OrdinalIgnoreCase);
+        return ResolveRequestGame(request, body) switch
+        {
+            RaceNetGame.Grid2 => "grid-2",
+            _ => "dirt-showdown"
+        };
+    }
+
+    private RaceNetGame ResolveRequestGame(HttpRequest request, CapturedBody body)
+    {
+        var path = request.Path.Value ?? string.Empty;
+        var host = request.Host.Host;
+        var egoNetFunction = request.Headers["X-EgoNet-Function"].ToString();
+
+        if (IsGrid2RequestPath(path) || IsGrid2Host(host) || IsGrid2Function(egoNetFunction) || IsGrid2Body(body))
+        {
+            return RaceNetGame.Grid2;
+        }
+
+        return RaceNetGame.DirtShowdown;
     }
 
     private bool IsGridAutosport(bool isGridAutosportRequest)
@@ -858,5 +874,28 @@ public sealed class RaceNetResponder
     private static bool IsGrid2RequestPath(string path)
     {
         return path.Contains("grid2", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsGrid2Host(string host)
+    {
+        return host.Contains("grid2", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsGrid2Function(string functionName)
+    {
+        return functionName.StartsWith("RaceNetGlobalDomination.", StringComparison.OrdinalIgnoreCase) ||
+            functionName.StartsWith("RaceNetRivals.", StringComparison.OrdinalIgnoreCase) ||
+            functionName.StartsWith("Rivals.", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsGrid2Body(CapturedBody body)
+    {
+        return EgoNetRequestParser.ReadTopLevelInteger(body, "GameId") == 4;
+    }
+
+    private enum RaceNetGame
+    {
+        DirtShowdown,
+        Grid2
     }
 }

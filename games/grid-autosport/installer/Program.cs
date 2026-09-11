@@ -311,14 +311,14 @@ internal sealed class Grid2Installer(string server, string gamePath, Action<stri
 
     private static readonly string[] ExecutableNames =
     [
-        "grid2.exe",
-        "grid2_avx.exe"
+        "GRIDAutosport.exe",
+        "GRIDAutosport_avx.exe"
     ];
 
     private static readonly string[] ProcessNames =
     [
-        "grid2",
-        "grid2_avx"
+        "GRIDAutosport",
+        "GRIDAutosport_avx"
     ];
 
     public void Install()

@@ -16,6 +16,7 @@ on:
       - "dirt-showdown-v*"
       - "grid-2-v*"
       - "f1-2018-v*"
+      - "grid-autosport-v*"
     paths:
       - "games/**"
       - "src/F12018EventActivator/**"
@@ -126,6 +127,56 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --title "GRID 2 ${GITHUB_REF_NAME#grid-2-}" \
             --notes-file artifacts/releases/grid-2/RELEASE_NOTES.md
+
+  package-grid-autosport:
+    name: Package GRID Autosport
+    runs-on: windows-latest
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/grid-autosport-v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Package
+        shell: pwsh
+        run: ./scripts/package-game-release.ps1 -Game grid-autosport
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: grid-autosport-mod
+          path: artifacts/releases/grid-autosport/*
+
+  release-grid-autosport:
+    name: Release GRID Autosport
+    runs-on: ubuntu-latest
+    needs: package-grid-autosport
+    if: startsWith(github.ref, 'refs/tags/grid-autosport-v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download packaged release
+        uses: actions/download-artifact@v4
+        with:
+          name: grid-autosport-mod
+          path: artifacts/releases/grid-autosport
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            artifacts/releases/grid-autosport/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "GRID Autosport ${GITHUB_REF_NAME#grid-autosport-}"
+
   package-f1-2018:
     name: Package F1 2018
     runs-on: windows-latest

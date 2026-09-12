@@ -22,11 +22,17 @@ public sealed class RaceNetDbContext(DbContextOptions<RaceNetDbContext> options)
 
     public DbSet<Grid2GlobalScoreRecord> Grid2GlobalScores => Set<Grid2GlobalScoreRecord>();
 
+    public DbSet<Grid2GlobalRewardClaimRecord> Grid2GlobalRewardClaims => Set<Grid2GlobalRewardClaimRecord>();
+
+    public DbSet<Grid2ProfileXpSnapshotRecord> Grid2ProfileXpSnapshots => Set<Grid2ProfileXpSnapshotRecord>();
+
+    public DbSet<Grid2WeeklyXpDeltaRecord> Grid2WeeklyXpDeltas => Set<Grid2WeeklyXpDeltaRecord>();
+
     public DbSet<Grid2RivalSessionDataRecord> Grid2RivalSessionData => Set<Grid2RivalSessionDataRecord>();
 
-    public DbSet<Grid2RivalOpponentRecord> Grid2RivalOpponents => Set<Grid2RivalOpponentRecord>();
-
     public DbSet<Grid2RivalAssignmentRecord> Grid2RivalAssignments => Set<Grid2RivalAssignmentRecord>();
+
+    public DbSet<Grid2RivalOpponentRecord> Grid2RivalOpponents => Set<Grid2RivalOpponentRecord>();
 
     public DbSet<RaceNetCallRecord> RaceNetCalls => Set<RaceNetCallRecord>();
 
@@ -139,6 +145,46 @@ public sealed class RaceNetDbContext(DbContextOptions<RaceNetDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Grid2GlobalRewardClaimRecord>(entity =>
+        {
+            entity.ToTable("Grid2GlobalRewardClaims");
+            entity.HasIndex(value => new { value.PlayerProfileId, value.RaceNetEventId }).IsUnique();
+            entity.HasIndex(value => value.RaceNetEventId);
+
+            entity
+                .HasOne(value => value.PlayerProfile)
+                .WithMany()
+                .HasForeignKey(value => value.PlayerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Grid2ProfileXpSnapshotRecord>(entity =>
+        {
+            entity.ToTable("Grid2ProfileXpSnapshots");
+            entity.HasIndex(value => new { value.PlayerProfileId, value.CapturedAt });
+
+            entity
+                .HasOne(value => value.PlayerProfile)
+                .WithMany()
+                .HasForeignKey(value => value.PlayerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Grid2WeeklyXpDeltaRecord>(entity =>
+        {
+            entity.ToTable("Grid2WeeklyXpDeltas");
+            entity.HasIndex(value => new { value.PlayerProfileId, value.WeekStartsAt });
+            entity.HasIndex(value => new { value.PlayerProfileId, value.Source, value.ReferenceKey }).IsUnique();
+            entity.Property(value => value.Source).HasMaxLength(32);
+            entity.Property(value => value.ReferenceKey).HasMaxLength(128);
+
+            entity
+                .HasOne(value => value.PlayerProfile)
+                .WithMany()
+                .HasForeignKey(value => value.PlayerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<Grid2RivalSessionDataRecord>(entity =>
         {
             entity.ToTable("Grid2RivalSessionData");
@@ -148,25 +194,6 @@ public sealed class RaceNetDbContext(DbContextOptions<RaceNetDbContext> options)
                 .HasOne(value => value.PlayerProfile)
                 .WithMany()
                 .HasForeignKey(value => value.PlayerProfileId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<Grid2RivalOpponentRecord>(entity =>
-        {
-            entity.ToTable("Grid2RivalOpponents");
-            entity.HasIndex(value => new { value.PlayerProfileId, value.OpponentPlayerProfileId }).IsUnique();
-            entity.HasIndex(value => value.LastSeenAt);
-
-            entity
-                .HasOne(value => value.PlayerProfile)
-                .WithMany()
-                .HasForeignKey(value => value.PlayerProfileId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity
-                .HasOne(value => value.OpponentPlayerProfile)
-                .WithMany()
-                .HasForeignKey(value => value.OpponentPlayerProfileId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -186,6 +213,25 @@ public sealed class RaceNetDbContext(DbContextOptions<RaceNetDbContext> options)
                 .HasOne(value => value.RivalPlayerProfile)
                 .WithMany()
                 .HasForeignKey(value => value.RivalPlayerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Grid2RivalOpponentRecord>(entity =>
+        {
+            entity.ToTable("Grid2RivalOpponents");
+            entity.HasIndex(value => new { value.PlayerProfileId, value.OpponentPlayerProfileId }).IsUnique();
+            entity.HasIndex(value => value.LastSeenAt);
+
+            entity
+                .HasOne(value => value.PlayerProfile)
+                .WithMany()
+                .HasForeignKey(value => value.PlayerProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity
+                .HasOne(value => value.OpponentPlayerProfile)
+                .WithMany()
+                .HasForeignKey(value => value.OpponentPlayerProfileId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

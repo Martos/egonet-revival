@@ -64,13 +64,22 @@ public interface IRaceNetStore
         Grid2GlobalScoreSubmission submission,
         CancellationToken cancellationToken);
 
-    Task<Grid2GlobalEventSnapshot?> GetGrid2CurrentGlobalEventAsync(CancellationToken cancellationToken);
+    Task<Grid2GlobalEventSnapshot?> GetGrid2CurrentGlobalEventAsync(
+        RaceNetSessionInfo? session,
+        CancellationToken cancellationToken);
 
-    Task<Grid2GlobalEventSnapshot?> GetGrid2PreviousGlobalEventAsync(CancellationToken cancellationToken);
+    Task<Grid2GlobalEventSnapshot?> GetGrid2PreviousGlobalEventAsync(
+        RaceNetSessionInfo? session,
+        CancellationToken cancellationToken);
 
     Task SaveGrid2MultiplayerEventAsync(
         RaceNetSessionInfo session,
         Grid2MultiplayerEventSubmission submission,
+        CancellationToken cancellationToken);
+
+    Task SaveGrid2ProfileSnapshotAsync(
+        RaceNetSessionInfo session,
+        Grid2ProfileSnapshotSubmission submission,
         CancellationToken cancellationToken);
 
     Task<Grid2RivalsSnapshot> GetGrid2RivalsAsync(

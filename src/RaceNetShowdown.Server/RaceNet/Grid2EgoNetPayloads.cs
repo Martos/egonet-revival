@@ -26,6 +26,17 @@ internal static class Grid2EgoNetPayloads
         IRaceNetStore store,
         CancellationToken cancellationToken)
     {
+        if (functionName == "DataMining.Profile")
+        {
+            var profile = EgoNetRequestParser.ReadGrid2ProfileSnapshot(body);
+            if (profile is not null && session is not null)
+            {
+                await store.SaveGrid2ProfileSnapshotAsync(session, profile, cancellationToken);
+            }
+
+            return Empty(headers);
+        }
+
         if (functionName == "DataMining.EndEvent")
         {
             var multiplayerEvent = EgoNetRequestParser.ReadGrid2MultiplayerEventSubmission(body);
@@ -50,13 +61,13 @@ internal static class Grid2EgoNetPayloads
 
         if (functionName == "RaceNetGlobalDomination.GetEvent")
         {
-            var activeEvent = await store.GetGrid2CurrentGlobalEventAsync(cancellationToken);
+            var activeEvent = await store.GetGrid2CurrentGlobalEventAsync(session, cancellationToken);
             return Html(BuildCurrentGlobalDomination(activeEvent), headers);
         }
 
         if (functionName == "RaceNetGlobalDomination.GetPreviousEvent")
         {
-            var previousEvent = await store.GetGrid2PreviousGlobalEventAsync(cancellationToken);
+            var previousEvent = await store.GetGrid2PreviousGlobalEventAsync(session, cancellationToken);
             return Html(BuildPreviousGlobalDomination(previousEvent), headers);
         }
 
@@ -372,8 +383,8 @@ internal static class Grid2EgoNetPayloads
             EgoNetBinary.Si64("PlatformId", checked((long)rival.SteamId)),
             EgoNetBinary.Si32("Type", rival.Type),
             EgoNetBinary.Bool("CanSeePresence", true),
-            EgoNetBinary.Ui32("TotalXPWon", 0),
-            EgoNetBinary.Ui32("RivalXPWon", 0));
+            EgoNetBinary.Ui32("TotalXPWon", rival.TotalXpWon),
+            EgoNetBinary.Ui32("RivalXPWon", rival.RivalXpWon));
     }
 
 

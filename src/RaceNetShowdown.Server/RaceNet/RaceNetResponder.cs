@@ -858,7 +858,12 @@ public sealed class RaceNetResponder
             return RaceNetGame.Grid2;
         }
 
-        return RaceNetGame.GridAutosport;
+        if (IsGridAutosportRequestPath(path))
+        {
+            return RaceNetGame.GridAutosport;
+        }
+
+        return RaceNetGame.DirtShowdown;
     }
 
     private bool IsGridAutosport(bool isGridAutosportRequest)

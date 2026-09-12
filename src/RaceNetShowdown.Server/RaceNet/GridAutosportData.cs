@@ -716,4 +716,73 @@ public static class GridAutosportData
         }
         throw new KeyNotFoundException($"Nessuna Location associata al TrackModel: {trackModel}");
     }
+
+    public sealed record GridAutoSportChallengeRace(
+        long RaceNetId,
+        bool HigherIsBetter,
+        GridAutosportDisciplineID DisciplineId,
+        GridAutosportLocation LocationId,
+        GridAutosportTrackModel TrackModelId,
+        int TrackModelDlcId,
+        GridAutosportTrackModelConditions ConditionsId,
+        GridAutosportRaceType RaceTypeId,
+        long RaceDuration,
+        int VehicleTierId,
+        GridAutosportVehicleClassID VehicleClassId,
+        int VehicleId,
+        int VehicleDlcId,
+        bool SpecialRace,
+        long GhostSlotId,
+        int Rank,
+        long PersonalBest,
+        long PlatinumTarget,
+        long GoldTarget,
+        long SilverTarget,
+        long BronzeTarget
+    )
+    {
+        public GridAutoSportChallengeRace(
+            long raceNetId,
+            bool higherIsBetter,
+            GridAutosportDisciplineID disciplineId,
+            GridAutosportTrackModelConditions conditionsId,
+            GridAutosportRaceType raceTypeId,
+            long raceDuration,
+            int vehicleTierId,
+            GridAutosportVehicleClassID vehicleClassId,
+            int vehicleId,
+            int vehicleDlcId,
+            bool specialRace,
+            long ghostSlotId,
+            int rank,
+            long personalBest,
+            long platinumTarget,
+            long goldTarget,
+            long silverTarget,
+            long bronzeTarget
+        ) : this(
+            raceNetId,
+            higherIsBetter,
+            disciplineId,
+            conditionsId.GetTrackModel().GetLocation(),
+            conditionsId.GetTrackModel(),
+            0,
+            conditionsId,
+            raceTypeId,
+            raceDuration,
+            vehicleTierId,
+            vehicleClassId,
+            vehicleId,
+            vehicleDlcId,
+            specialRace,
+            ghostSlotId,
+            rank,
+            personalBest,
+            platinumTarget,
+            goldTarget,
+            silverTarget,
+            bronzeTarget
+        )
+        { }
+    }
 }

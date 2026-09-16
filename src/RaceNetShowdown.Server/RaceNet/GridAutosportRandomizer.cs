@@ -26,7 +26,13 @@ public static class GridAutosportRandomizer
         GridAutosportTrackModel.OkutamaP2pRoute2,
         GridAutosportTrackModel.OkutamaP2pRoute3,
         GridAutosportTrackModel.OkutamaP2pRoute4,
-        GridAutosportTrackModel.OkutamaP2pRoute5
+        GridAutosportTrackModel.OkutamaP2pRoute5,
+        GridAutosportTrackModel.CaliforniaRoute0,
+        GridAutosportTrackModel.CaliforniaRoute1,
+        GridAutosportTrackModel.CaliforniaRoute2,
+        GridAutosportTrackModel.CaliforniaRoute3,
+        GridAutosportTrackModel.CaliforniaRoute4,
+        GridAutosportTrackModel.CaliforniaRoute5
     };
 
     private static readonly HashSet<GridAutosportTrackModel> DriftAllowedTracks = new()
@@ -37,29 +43,14 @@ public static class GridAutosportRandomizer
         GridAutosportTrackModel.OkutamaGpRoute3,
         GridAutosportTrackModel.OkutamaGpRoute4,
         GridAutosportTrackModel.OkutamaGpRoute5,
-        GridAutosportTrackModel.OkutamaP2pRoute0,
-        GridAutosportTrackModel.OkutamaP2pRoute1,
-        GridAutosportTrackModel.OkutamaP2pRoute2,
-        GridAutosportTrackModel.OkutamaP2pRoute3,
-        GridAutosportTrackModel.OkutamaP2pRoute4,
-        GridAutosportTrackModel.OkutamaP2pRoute5,
         GridAutosportTrackModel.SanFranciscoRoute0,
         GridAutosportTrackModel.SanFranciscoRoute1,
         GridAutosportTrackModel.SanFranciscoRoute2,
         GridAutosportTrackModel.SanFranciscoRoute3,
         GridAutosportTrackModel.SanFranciscoRoute4,
         GridAutosportTrackModel.SanFranciscoRoute5,
-        GridAutosportTrackModel.DubaiRoute0,
-        GridAutosportTrackModel.DubaiRoute1,
-        GridAutosportTrackModel.DubaiRoute2,
-        GridAutosportTrackModel.DubaiRoute3,
-        GridAutosportTrackModel.DubaiRoute4,
-        GridAutosportTrackModel.DubaiRoute5,
-        GridAutosportTrackModel.YasMarinaRoute0,
-        GridAutosportTrackModel.YasMarinaRoute1,
-        GridAutosportTrackModel.YasMarinaRoute2,
-        GridAutosportTrackModel.YasMarinaRoute3,
-        GridAutosportTrackModel.YasMarinaRoute4
+        GridAutosportTrackModel.DetroitRoute8,
+        GridAutosportTrackModel.DetroitRoute9
     };
 
     public static GridAutoSportChallengeRace[] GenerateRandomRaces(int totalRaces = 6)
@@ -131,6 +122,11 @@ public static class GridAutosportRandomizer
         if (raceType == GridAutosportRaceType.Drift)
         {
             return DriftAllowedTracks.Contains(trackModel);
+        }
+
+        if (DriftAllowedTracks.Contains(trackModel))
+        {
+            return false;
         }
 
         if (raceType == GridAutosportRaceType.Sprint)

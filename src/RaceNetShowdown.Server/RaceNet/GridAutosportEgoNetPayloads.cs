@@ -11,8 +11,6 @@ internal static class GridAutosportEgoNetPayloads
     private const string HtmlContentType = "text/html";
     private const string EgoNetContentType = "application/egonet-stream";
 
-    private static readonly GridAutoSportChallengeRace[] GridAutosportChallengeRaces = GridAutosportRandomizer.GenerateRandomRaces(5);
-
     private static Action<BinaryWriter> BuildChallengeRace(GridAutoSportChallengeRace race)
     {
         return EgoNetBinary.DictValue(
@@ -46,7 +44,7 @@ internal static class GridAutosportEgoNetPayloads
             EgoNetBinary.Tutc("Expires", DateTimeOffset.UtcNow.AddDays(7)),
             EgoNetBinary.Vector(
                 "Races",
-                GridAutosportChallengeRaces.Select(BuildChallengeRace).ToArray()));
+                GridAutosportRandomizer.GenerateRandomRaces(5).Select(BuildChallengeRace).ToArray()));
     }
 
     private static RaceNetResponse Html(byte[] body, IReadOnlyDictionary<string, string> headers)

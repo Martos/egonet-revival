@@ -29,10 +29,43 @@ public static class GridAutosportRandomizer
         GridAutosportTrackModel.OkutamaP2pRoute5
     };
 
+    private static readonly HashSet<GridAutosportTrackModel> DriftAllowedTracks = new()
+    {
+        GridAutosportTrackModel.OkutamaGpRoute0,
+        GridAutosportTrackModel.OkutamaGpRoute1,
+        GridAutosportTrackModel.OkutamaGpRoute2,
+        GridAutosportTrackModel.OkutamaGpRoute3,
+        GridAutosportTrackModel.OkutamaGpRoute4,
+        GridAutosportTrackModel.OkutamaGpRoute5,
+        GridAutosportTrackModel.OkutamaP2pRoute0,
+        GridAutosportTrackModel.OkutamaP2pRoute1,
+        GridAutosportTrackModel.OkutamaP2pRoute2,
+        GridAutosportTrackModel.OkutamaP2pRoute3,
+        GridAutosportTrackModel.OkutamaP2pRoute4,
+        GridAutosportTrackModel.OkutamaP2pRoute5,
+        GridAutosportTrackModel.SanFranciscoRoute0,
+        GridAutosportTrackModel.SanFranciscoRoute1,
+        GridAutosportTrackModel.SanFranciscoRoute2,
+        GridAutosportTrackModel.SanFranciscoRoute3,
+        GridAutosportTrackModel.SanFranciscoRoute4,
+        GridAutosportTrackModel.SanFranciscoRoute5,
+        GridAutosportTrackModel.DubaiRoute0,
+        GridAutosportTrackModel.DubaiRoute1,
+        GridAutosportTrackModel.DubaiRoute2,
+        GridAutosportTrackModel.DubaiRoute3,
+        GridAutosportTrackModel.DubaiRoute4,
+        GridAutosportTrackModel.DubaiRoute5,
+        GridAutosportTrackModel.YasMarinaRoute0,
+        GridAutosportTrackModel.YasMarinaRoute1,
+        GridAutosportTrackModel.YasMarinaRoute2,
+        GridAutosportTrackModel.YasMarinaRoute3,
+        GridAutosportTrackModel.YasMarinaRoute4
+    };
+
     public static GridAutoSportChallengeRace[] GenerateRandomRaces(int totalRaces = 6)
     {
         if (totalRaces < 5)
-            throw new ArgumentException("Need 5 races.");
+            throw new ArgumentException("Sono necessarie almeno 5 gare.");
 
         var disciplines = new List<GridAutosportDisciplineID>
         {
@@ -52,7 +85,7 @@ public static class GridAutosportRandomizer
             disciplines.Add(allDisciplines[Rnd.Next(allDisciplines.Length)]);
         }
 
-        disciplines = disciplines.OrderBy(x => Rnd.Next()).ToList();
+        disciplines = disciplines.OrderBy(_ => Rnd.Next()).ToList();
 
         var allConditions = Enum.GetValues(typeof(GridAutosportTrackModelConditions))
                                 .Cast<GridAutosportTrackModelConditions>()
@@ -64,10 +97,19 @@ public static class GridAutosportRandomizer
         {
             int raceId = i + 1;
             var discipline = disciplines[i];
-            var condition = allConditions[Rnd.Next(allConditions.Length)];
-            var trackModel = GridAutosportData.GetTrackModel(condition);
-            var raceType = GetRandomRaceType(discipline, trackModel);
-            var vehicleClass = GetRandomVehicleClass(discipline);
+            var raceType = GetRandomRaceType(discipline);
+
+            GridAutosportTrackModelConditions condition;
+            GridAutosportTrackModel trackModel;
+
+            do
+            {
+                condition = allConditions[Rnd.Next(allConditions.Length)];
+                trackModel = GridAutosportData.GetTrackModel(condition);
+            }
+            while (!IsTrackValidForRace(discipline, raceType, trackModel));
+
+            var vehicleClass = GetRandomVehicleClass(discipline, raceType);
 
             bool isEnduranceParam = (discipline == GridAutosportDisciplineID.Endurance);
             int scoreParam1 = (Rnd.Next(2) == 0) ? 0 : 98112;
@@ -81,49 +123,83 @@ public static class GridAutosportRandomizer
         return generatedRaces.ToArray();
     }
 
-    private static GridAutosportRaceType GetRandomRaceType(
+    private static bool IsTrackValidForRace(
         GridAutosportDisciplineID discipline,
+        GridAutosportRaceType raceType,
         GridAutosportTrackModel trackModel)
     {
-        bool canSprint = SprintAllowedTracks.Contains(trackModel);
+        if (raceType == GridAutosportRaceType.Drift)
+        {
+            return DriftAllowedTracks.Contains(trackModel);
+        }
 
-        GridAutosportRaceType[] gridAutosportRaceTypes = [GridAutosportRaceType.Race];
+        if (raceType == GridAutosportRaceType.Sprint)
+        {
+            return SprintAllowedTracks.Contains(trackModel);
+        }
+
+        if (discipline == GridAutosportDisciplineID.Endurance || raceType == GridAutosportRaceType.Endurance)
+        {
+            return !SprintAllowedTracks.Contains(trackModel);
+        }
+
+        return true;
+    }
+
+    private static GridAutosportRaceType GetRandomRaceType(GridAutosportDisciplineID discipline)
+    {
         var validTypes = discipline switch
         {
             GridAutosportDisciplineID.Endurance =>
-                [GridAutosportRaceType.Endurance],
+                new[] { GridAutosportRaceType.Endurance },
 
             GridAutosportDisciplineID.Openwheel =>
-                [GridAutosportRaceType.Race, GridAutosportRaceType.TimeAttack],
+                new[] { GridAutosportRaceType.Race, GridAutosportRaceType.TimeAttack },
 
             GridAutosportDisciplineID.Tuner =>
-                [GridAutosportRaceType.TimeAttack, GridAutosportRaceType.Drift, GridAutosportRaceType.Race],
+                new[] { GridAutosportRaceType.TimeAttack, GridAutosportRaceType.Drift, GridAutosportRaceType.Race },
 
-            GridAutosportDisciplineID.Street => canSprint
-                ? [GridAutosportRaceType.Race, GridAutosportRaceType.Sprint]
-                : [GridAutosportRaceType.Race],
+            GridAutosportDisciplineID.Street =>
+                new[] { GridAutosportRaceType.Race, GridAutosportRaceType.Sprint },
 
-            // Fallback
-            _ => canSprint
-                ? [GridAutosportRaceType.Race, GridAutosportRaceType.Sprint]
-                : gridAutosportRaceTypes
+            _ =>
+                new[] { GridAutosportRaceType.Race, GridAutosportRaceType.Sprint }
         };
 
         return validTypes[Rnd.Next(validTypes.Length)];
     }
 
-    private static GridAutosportVehicleClassID GetRandomVehicleClass(GridAutosportDisciplineID discipline)
+    private static GridAutosportVehicleClassID GetRandomVehicleClass(
+        GridAutosportDisciplineID discipline,
+        GridAutosportRaceType raceType)
     {
-        GridAutosportVehicleClassID[] gridAutosportVehicleClassIDs = [GridAutosportVehicleClassID.HotHatch, GridAutosportVehicleClassID.Supercar, GridAutosportVehicleClassID.Hypercar];
+        if (raceType == GridAutosportRaceType.Drift)
+        {
+            GridAutosportVehicleClassID[] driftClasses = [GridAutosportVehicleClassID.C1Drift, GridAutosportVehicleClassID.C2Drift];
+            return driftClasses[Rnd.Next(driftClasses.Length)];
+        }
+
         var validClasses = discipline switch
         {
-            GridAutosportDisciplineID.Touring => [GridAutosportVehicleClassID.CatATouring, GridAutosportVehicleClassID.CatBTouring, GridAutosportVehicleClassID.CatCTouring],
-            GridAutosportDisciplineID.Endurance => [GridAutosportVehicleClassID.EnduranceGtGroup1, GridAutosportVehicleClassID.EnduranceGtGroup2, GridAutosportVehicleClassID.EnduranceGtUltimate],
-            GridAutosportDisciplineID.Openwheel => [GridAutosportVehicleClassID.FormulaA, GridAutosportVehicleClassID.FormulaB, GridAutosportVehicleClassID.FormulaC],
-            GridAutosportDisciplineID.Tuner => [GridAutosportVehicleClassID.Modified, GridAutosportVehicleClassID.SuperModified, GridAutosportVehicleClassID.Jdm],
-            GridAutosportDisciplineID.Street => gridAutosportVehicleClassIDs,
-            _ => [GridAutosportVehicleClassID.CatATouring]
+            GridAutosportDisciplineID.Touring =>
+                new[] { GridAutosportVehicleClassID.CatATouring, GridAutosportVehicleClassID.CatBTouring, GridAutosportVehicleClassID.CatCTouring },
+
+            GridAutosportDisciplineID.Endurance =>
+                new[] { GridAutosportVehicleClassID.EnduranceGtGroup1, GridAutosportVehicleClassID.EnduranceGtGroup2, GridAutosportVehicleClassID.EnduranceGtUltimate },
+
+            GridAutosportDisciplineID.Openwheel =>
+                new[] { GridAutosportVehicleClassID.FormulaA, GridAutosportVehicleClassID.FormulaB, GridAutosportVehicleClassID.FormulaC },
+
+            GridAutosportDisciplineID.Tuner =>
+                new[] { GridAutosportVehicleClassID.Modified, GridAutosportVehicleClassID.SuperModified, GridAutosportVehicleClassID.Jdm },
+
+            GridAutosportDisciplineID.Street =>
+                new[] { GridAutosportVehicleClassID.HotHatch, GridAutosportVehicleClassID.Supercar, GridAutosportVehicleClassID.Hypercar },
+
+            _ =>
+                new[] { GridAutosportVehicleClassID.CatATouring }
         };
+
         return validClasses[Rnd.Next(validClasses.Length)];
     }
 }

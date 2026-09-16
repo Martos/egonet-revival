@@ -717,6 +717,11 @@ public static class GridAutosportData
         throw new KeyNotFoundException($"Nessuna Location associata al TrackModel: {trackModel}");
     }
 
+    public static bool IsDriftClass(this GridAutosportVehicleClassID vehicleClass)
+    {
+        return vehicleClass == GridAutosportVehicleClassID.C1Drift || vehicleClass == GridAutosportVehicleClassID.C2Drift;
+    }
+
     public sealed record GridAutoSportChallengeRace(
         long RaceNetId,
         bool HigherIsBetter,

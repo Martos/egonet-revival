@@ -37,20 +37,8 @@ public static class GridAutosportRandomizer
 
     private static readonly HashSet<GridAutosportTrackModel> DriftAllowedTracks = new()
     {
-        GridAutosportTrackModel.OkutamaGpRoute0,
-        GridAutosportTrackModel.OkutamaGpRoute1,
-        GridAutosportTrackModel.OkutamaGpRoute2,
-        GridAutosportTrackModel.OkutamaGpRoute3,
-        GridAutosportTrackModel.OkutamaGpRoute4,
-        GridAutosportTrackModel.OkutamaGpRoute5,
-        GridAutosportTrackModel.SanFranciscoRoute0,
-        GridAutosportTrackModel.SanFranciscoRoute1,
-        GridAutosportTrackModel.SanFranciscoRoute2,
-        GridAutosportTrackModel.SanFranciscoRoute3,
-        GridAutosportTrackModel.SanFranciscoRoute4,
-        GridAutosportTrackModel.SanFranciscoRoute5,
-        GridAutosportTrackModel.DetroitRoute8,
-        GridAutosportTrackModel.DetroitRoute9
+        GridAutosportTrackModel.CallahanOvalRoute5,
+        GridAutosportTrackModel.BrandsHatchRoute5
     };
 
     public static GridAutoSportChallengeRace[] GenerateRandomRaces(int totalRaces = 6)

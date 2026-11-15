@@ -82,6 +82,15 @@ public interface IRaceNetStore
         Grid2ProfileSnapshotSubmission submission,
         CancellationToken cancellationToken);
 
+    Task SaveGridAutosportProfileAsync(
+        RaceNetSessionInfo session,
+        GridAutosportProfileSubmission submission,
+        CancellationToken cancellationToken);
+
+    /// <summary>All GRID Autosport players with a saved online profile, highest XP first.</summary>
+    Task<IReadOnlyList<GridAutosportPlayerSnapshot>> GetGridAutosportPlayersAsync(
+        CancellationToken cancellationToken);
+
     Task<Grid2RivalsSnapshot> GetGrid2RivalsAsync(
         RaceNetSessionInfo session,
         CancellationToken cancellationToken);

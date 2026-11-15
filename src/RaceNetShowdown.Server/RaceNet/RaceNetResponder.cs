@@ -286,7 +286,7 @@ public sealed class RaceNetResponder
 
         if (requestGame == RaceNetGame.GridAutosport)
         {
-            var gridAutosportResponse = GridAutosportEgoNetPayloads.TryBuild(normalized, body, session, headers);
+            var gridAutosportResponse = await GridAutosportEgoNetPayloads.TryBuildAsync(normalized, body, session, headers, store, cancellationToken);
             if (gridAutosportResponse is not null)
             {
                 return gridAutosportResponse;

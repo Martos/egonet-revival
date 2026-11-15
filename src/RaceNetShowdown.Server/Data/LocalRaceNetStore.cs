@@ -17,6 +17,7 @@ public sealed class LocalRaceNetStore : IRaceNetStore
     private static readonly ConcurrentDictionary<string, List<RaceNetIssuedChallenge>> IssuedChallengesBySession = new();
     private static readonly ConcurrentDictionary<long, byte[]> GhostDataBySlot = new();
     private static readonly ConcurrentDictionary<long, byte[]> Grid2RivalSessionDataByProfile = new();
+    private static readonly ConcurrentDictionary<string, GridAutosportPlayerSnapshot> GridAutosportPlayersByName = new();
     private static byte[]? _lastUploadedGhostData;
     private static long _nextIssuedChallengeId = 10_000;
 
@@ -227,6 +228,38 @@ public sealed class LocalRaceNetStore : IRaceNetStore
         CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
+    }
+
+    public Task SaveGridAutosportProfileAsync(
+        RaceNetSessionInfo session,
+        GridAutosportProfileSubmission submission,
+        CancellationToken cancellationToken)
+    {
+        if (submission.TotalDxp >= 0)
+        {
+            GridAutosportPlayersByName[session.DisplayName] = new GridAutosportPlayerSnapshot(
+                session.PlayerProfileId,
+                session.DisplayName,
+                submission.TotalDxp,
+                submission.TouringXp,
+                submission.EnduranceXp,
+                submission.OpenWheelXp,
+                submission.TunerXp,
+                submission.StreetXp,
+                GridAutosportData.GetOnlineLevel(submission.TotalDxp));
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<GridAutosportPlayerSnapshot>> GetGridAutosportPlayersAsync(
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<GridAutosportPlayerSnapshot> players = GridAutosportPlayersByName.Values
+            .OrderByDescending(player => player.TotalDxp)
+            .ThenBy(player => player.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return Task.FromResult(players);
     }
 
     public Task<Grid2RivalsSnapshot> GetGrid2RivalsAsync(

@@ -758,6 +758,85 @@ public sealed class EntityFrameworkRaceNetStore(
             xpDelta);
     }
 
+    public async Task SaveGridAutosportProfileAsync(
+        RaceNetSessionInfo session,
+        GridAutosportProfileSubmission submission,
+        CancellationToken cancellationToken)
+    {
+        if (session.PlayerProfileId <= 0 || submission.TotalDxp < 0)
+        {
+            return;
+        }
+
+        var level = GridAutosportData.GetOnlineLevel(submission.TotalDxp);
+        var record = await dbContext.GridAutosportProfiles
+            .FirstOrDefaultAsync(value => value.PlayerProfileId == session.PlayerProfileId, cancellationToken);
+
+        if (record is not null &&
+            record.SaveGameId == submission.SaveGameId &&
+            record.TotalDxp == submission.TotalDxp &&
+            record.TouringXp == submission.TouringXp &&
+            record.EnduranceXp == submission.EnduranceXp &&
+            record.OpenWheelXp == submission.OpenWheelXp &&
+            record.TunerXp == submission.TunerXp &&
+            record.StreetXp == submission.StreetXp)
+        {
+            return;
+        }
+
+        if (record is null)
+        {
+            record = new GridAutosportProfileRecord { PlayerProfileId = session.PlayerProfileId };
+            dbContext.GridAutosportProfiles.Add(record);
+        }
+
+        record.SaveGameId = submission.SaveGameId;
+        record.TotalDxp = submission.TotalDxp;
+        record.TouringXp = submission.TouringXp;
+        record.EnduranceXp = submission.EnduranceXp;
+        record.OpenWheelXp = submission.OpenWheelXp;
+        record.TunerXp = submission.TunerXp;
+        record.StreetXp = submission.StreetXp;
+        record.XpLevel = level;
+        record.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "GRID Autosport profile saved for {Player}: totalDxp={TotalDxp} level={Level}",
+            session.DisplayName,
+            submission.TotalDxp,
+            level);
+    }
+
+    public async Task<IReadOnlyList<GridAutosportPlayerSnapshot>> GetGridAutosportPlayersAsync(
+        CancellationToken cancellationToken)
+    {
+        var rows = await dbContext.GridAutosportProfiles
+            .AsNoTracking()
+            .Join(
+                dbContext.PlayerProfiles.AsNoTracking(),
+                profile => profile.PlayerProfileId,
+                player => player.Id,
+                (profile, player) => new { profile, player.DisplayName })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .Select(row => new GridAutosportPlayerSnapshot(
+                row.profile.PlayerProfileId,
+                row.DisplayName,
+                row.profile.TotalDxp,
+                row.profile.TouringXp,
+                row.profile.EnduranceXp,
+                row.profile.OpenWheelXp,
+                row.profile.TunerXp,
+                row.profile.StreetXp,
+                row.profile.XpLevel))
+            .OrderByDescending(player => player.TotalDxp)
+            .ThenBy(player => player.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public async Task<Grid2RivalsSnapshot> GetGrid2RivalsAsync(
         RaceNetSessionInfo session,
         CancellationToken cancellationToken)
@@ -2023,6 +2102,30 @@ public sealed class EntityFrameworkRaceNetStore(
                 cancellationToken);
             await dbContext.Database.ExecuteSqlRawAsync(
                 """
+                CREATE TABLE IF NOT EXISTS "GridAutosportProfiles" (
+                    "Id" INTEGER NOT NULL CONSTRAINT "PK_GridAutosportProfiles" PRIMARY KEY AUTOINCREMENT,
+                    "PlayerProfileId" INTEGER NOT NULL,
+                    "SaveGameId" INTEGER NULL,
+                    "TotalDxp" INTEGER NOT NULL,
+                    "TouringXp" INTEGER NOT NULL,
+                    "EnduranceXp" INTEGER NOT NULL,
+                    "OpenWheelXp" INTEGER NOT NULL,
+                    "TunerXp" INTEGER NOT NULL,
+                    "StreetXp" INTEGER NOT NULL,
+                    "XpLevel" INTEGER NOT NULL,
+                    "UpdatedAt" TEXT NOT NULL,
+                    CONSTRAINT "FK_GridAutosportProfiles_PlayerProfiles_PlayerProfileId" FOREIGN KEY ("PlayerProfileId") REFERENCES "PlayerProfiles" ("Id") ON DELETE RESTRICT
+                );
+                """,
+                cancellationToken);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_GridAutosportProfiles_PlayerProfileId"
+                ON "GridAutosportProfiles" ("PlayerProfileId");
+                """,
+                cancellationToken);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
                 CREATE TABLE IF NOT EXISTS "Grid2WeeklyXpDeltas" (
                     "Id" INTEGER NOT NULL CONSTRAINT "PK_Grid2WeeklyXpDeltas" PRIMARY KEY AUTOINCREMENT,
                     "PlayerProfileId" INTEGER NOT NULL,
@@ -2300,6 +2403,34 @@ public sealed class EntityFrameworkRaceNetStore(
                 """
                 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_Grid2ProfileXpSnapshots_PlayerProfileId_CapturedAt' AND object_id = OBJECT_ID(N'[Grid2ProfileXpSnapshots]'))
                     CREATE INDEX [IX_Grid2ProfileXpSnapshots_PlayerProfileId_CapturedAt] ON [Grid2ProfileXpSnapshots] ([PlayerProfileId], [CapturedAt]);
+                """,
+                cancellationToken);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                IF OBJECT_ID(N'[GridAutosportProfiles]', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE [GridAutosportProfiles] (
+                        [Id] bigint NOT NULL IDENTITY,
+                        [PlayerProfileId] bigint NOT NULL,
+                        [SaveGameId] bigint NULL,
+                        [TotalDxp] int NOT NULL,
+                        [TouringXp] int NOT NULL,
+                        [EnduranceXp] int NOT NULL,
+                        [OpenWheelXp] int NOT NULL,
+                        [TunerXp] int NOT NULL,
+                        [StreetXp] int NOT NULL,
+                        [XpLevel] int NOT NULL,
+                        [UpdatedAt] datetimeoffset NOT NULL,
+                        CONSTRAINT [PK_GridAutosportProfiles] PRIMARY KEY ([Id]),
+                        CONSTRAINT [FK_GridAutosportProfiles_PlayerProfiles_PlayerProfileId] FOREIGN KEY ([PlayerProfileId]) REFERENCES [PlayerProfiles] ([Id]) ON DELETE NO ACTION
+                    );
+                END
+                """,
+                cancellationToken);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_GridAutosportProfiles_PlayerProfileId' AND object_id = OBJECT_ID(N'[GridAutosportProfiles]'))
+                    CREATE UNIQUE INDEX [IX_GridAutosportProfiles_PlayerProfileId] ON [GridAutosportProfiles] ([PlayerProfileId]);
                 """,
                 cancellationToken);
             await dbContext.Database.ExecuteSqlRawAsync(

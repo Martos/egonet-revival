@@ -259,6 +259,34 @@ public sealed class Grid2ProfileXpSnapshotRecord
     public DateTimeOffset CapturedAt { get; set; }
 }
 
+/// <summary>Latest GRID Autosport online profile per player (from DataMining.Profile, Statistics.Multiplayer).</summary>
+public sealed class GridAutosportProfileRecord
+{
+    public long Id { get; set; }
+
+    public long PlayerProfileId { get; set; }
+
+    public PlayerProfile? PlayerProfile { get; set; }
+
+    public long? SaveGameId { get; set; }
+
+    public int TotalDxp { get; set; }
+
+    public int TouringXp { get; set; }
+
+    public int EnduranceXp { get; set; }
+
+    public int OpenWheelXp { get; set; }
+
+    public int TunerXp { get; set; }
+
+    public int StreetXp { get; set; }
+
+    public int XpLevel { get; set; }
+
+    public DateTimeOffset UpdatedAt { get; set; }
+}
+
 public sealed class Grid2WeeklyXpDeltaRecord
 {
     public long Id { get; set; }

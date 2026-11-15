@@ -427,6 +427,134 @@ internal static class EgoNetRequestParser
         return null;
     }
 
+    /// <summary>
+    /// GRID Autosport DataMining.Profile: Statistics.Tracking.SaveGameId,
+    /// Statistics.Multiplayer.TotalDXP and Statistics.Multiplayer.Discipline.{Touring,Endurance,OpenWheel,Tuner,Street}XP.
+    /// Returns null when the body has no Multiplayer section (sent before the online profile exists).
+    /// </summary>
+    public static GridAutosportProfileSubmission? ReadGridAutosportProfile(CapturedBody body)
+    {
+        if (body.BodyBytes.Length == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var stream = new MemoryStream(body.BodyBytes, writable: false);
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            if (ReadTag(reader) != "vdic")
+            {
+                return null;
+            }
+
+            var fields = reader.ReadInt32();
+            for (var i = 0; i < fields; i++)
+            {
+                var name = ReadName(reader);
+                var tag = ReadTag(reader);
+                if (name == "Statistics" && tag == "vdic")
+                {
+                    return ReadGridAutosportProfileStatistics(reader);
+                }
+
+                SkipValue(reader, tag);
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static GridAutosportProfileSubmission? ReadGridAutosportProfileStatistics(BinaryReader reader)
+    {
+        long? saveGameId = null;
+        GridAutosportProfileSubmission? multiplayer = null;
+
+        var fields = reader.ReadInt32();
+        for (var i = 0; i < fields; i++)
+        {
+            var name = ReadName(reader);
+            var tag = ReadTag(reader);
+
+            if (name == "Tracking" && tag == "vdic")
+            {
+                (saveGameId, _) = ReadGrid2Tracking(reader);
+                continue;
+            }
+
+            if (name == "Multiplayer" && tag == "vdic")
+            {
+                multiplayer = ReadGridAutosportMultiplayer(reader);
+                continue;
+            }
+
+            SkipValue(reader, tag);
+        }
+
+        return multiplayer is null ? null : multiplayer with { SaveGameId = saveGameId };
+    }
+
+    private static GridAutosportProfileSubmission? ReadGridAutosportMultiplayer(BinaryReader reader)
+    {
+        int? totalDxp = null;
+        var disciplineXp = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        var fields = reader.ReadInt32();
+        for (var i = 0; i < fields; i++)
+        {
+            var name = ReadName(reader);
+            var tag = ReadTag(reader);
+
+            if (name == "TotalDXP" && TryReadInteger(reader, tag, out var total))
+            {
+                totalDxp = (int)total;
+                continue;
+            }
+
+            if (name == "Discipline" && tag == "vdic")
+            {
+                var disciplineFields = reader.ReadInt32();
+                for (var j = 0; j < disciplineFields; j++)
+                {
+                    var disciplineName = ReadName(reader);
+                    var disciplineTag = ReadTag(reader);
+                    if (disciplineName.EndsWith("XP", StringComparison.Ordinal) &&
+                        TryReadInteger(reader, disciplineTag, out var xp))
+                    {
+                        disciplineXp[disciplineName] = (int)xp;
+                    }
+                    else
+                    {
+                        SkipValue(reader, disciplineTag);
+                    }
+                }
+
+                continue;
+            }
+
+            SkipValue(reader, tag);
+        }
+
+        if (totalDxp is null)
+        {
+            return null;
+        }
+
+        int Xp(string key) => disciplineXp.GetValueOrDefault(key);
+        return new GridAutosportProfileSubmission(
+            null,
+            totalDxp.Value,
+            Xp("TouringXP"),
+            Xp("EnduranceXP"),
+            Xp("OpenWheelXP"),
+            Xp("TunerXP"),
+            Xp("StreetXP"));
+    }
+
     public static Grid2MultiplayerEventSubmission? ReadGrid2MultiplayerEventSubmission(CapturedBody body)
     {
         if (body.BodyBytes.Length == 0)

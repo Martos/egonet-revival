@@ -717,6 +717,20 @@ public static partial class GridAutosportData
         throw new KeyNotFoundException($"Nessuna Location associata al TrackModel: {trackModel}");
     }
 
+    /// <summary>Online level (XPLevel, 1..99) from Statistics.Multiplayer.TotalDXP, via net_fanbase.</summary>
+    public static int GetOnlineLevel(long totalDxp) => LevelFromThresholds(OnlineLevelXpThresholds, totalDxp);
+
+    /// <summary>Team level (TeamXPLevel) from the team's total XP, via career_xp_level (approximation).</summary>
+    public static int GetTeamLevel(long teamXp) => LevelFromThresholds(TeamLevelXpThresholds, teamXp);
+
+    private static int LevelFromThresholds(int[] thresholds, long xp)
+    {
+        var level = 1;
+        for (var i = 1; i < thresholds.Length && xp >= thresholds[i]; i++)
+            level = i + 1;
+        return level;
+    }
+
     public static bool IsDriftClass(this GridAutosportVehicleClassID vehicleClass)
     {
         return vehicleClass == GridAutosportVehicleClassID.C1Drift || vehicleClass == GridAutosportVehicleClassID.C2Drift;

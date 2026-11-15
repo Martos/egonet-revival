@@ -79,6 +79,26 @@ public sealed record Grid2ProfileSnapshotSubmission(
     int XpTotal,
     int XpLevel);
 
+public sealed record GridAutosportProfileSubmission(
+    long? SaveGameId,
+    int TotalDxp,
+    int TouringXp,
+    int EnduranceXp,
+    int OpenWheelXp,
+    int TunerXp,
+    int StreetXp);
+
+public sealed record GridAutosportPlayerSnapshot(
+    long PlayerProfileId,
+    string DisplayName,
+    int TotalDxp,
+    int TouringXp,
+    int EnduranceXp,
+    int OpenWheelXp,
+    int TunerXp,
+    int StreetXp,
+    int XpLevel);
+
 public sealed record Grid2RaceParticipant(
     ulong SteamId,
     string Name,

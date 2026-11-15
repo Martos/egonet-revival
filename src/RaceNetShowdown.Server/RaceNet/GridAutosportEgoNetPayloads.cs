@@ -168,6 +168,111 @@ internal static class GridAutosportEgoNetPayloads
             EgoNetBinary.Dstr("Message", string.Empty));
     }
 
+    // ---- Profile, levels and community team ------------------------------------------------
+    // The original server stored Statistics.Multiplayer from DataMining.Profile and reported the
+    // online level (net_fanbase tier) as XPLevel in RaceNetTeams.GetTeamMembers.
+    // Here every player with a saved profile belongs to one community team.
+
+    private const long CommunityTeamId = 1;
+    private const string CommunityTeamTag = "EGO";
+    private const string CommunityTeamName = "EgoNet Revival";
+    private const int DefaultTeamPageSize = 20;
+
+    public static async Task<RaceNetResponse?> TryBuildAsync(
+        string functionName,
+        CapturedBody body,
+        RaceNetSessionInfo? session,
+        IReadOnlyDictionary<string, string> headers,
+        IRaceNetStore store,
+        CancellationToken cancellationToken)
+    {
+        switch (functionName)
+        {
+            case "DataMining.Profile":
+            {
+                var profile = EgoNetRequestParser.ReadGridAutosportProfile(body);
+                if (profile is not null && session is not null)
+                {
+                    await store.SaveGridAutosportProfileAsync(session, profile, cancellationToken);
+                }
+
+                return Empty(headers);
+            }
+
+            case "RaceNetTeams.GetTeamDetails":
+            {
+                var players = await store.GetGridAutosportPlayersAsync(cancellationToken);
+                return Html(BuildTeamDetails(players), headers);
+            }
+
+            case "RaceNetTeams.GetTeamMembers":
+            {
+                var teamId = EgoNetRequestParser.ReadTopLevelInteger(body, "TeamId");
+                if (teamId is not null && teamId != CommunityTeamId)
+                {
+                    return Html(BuildTeamMembers([], 1, DefaultTeamPageSize), headers);
+                }
+
+                var pageNumber = (int)(EgoNetRequestParser.ReadTopLevelInteger(body, "PageNumber") ?? 1);
+                var pageSize = (int)(EgoNetRequestParser.ReadTopLevelInteger(body, "PageSize") ?? DefaultTeamPageSize);
+                var players = await store.GetGridAutosportPlayersAsync(cancellationToken);
+                return Html(BuildTeamMembers(players, pageNumber, pageSize), headers);
+            }
+
+            default:
+                return TryBuild(functionName, body, session, headers);
+        }
+    }
+
+    private static byte[] BuildTeamDetails(IReadOnlyList<GridAutosportPlayerSnapshot> players)
+    {
+        static uint Sum(IEnumerable<int> values) => (uint)Math.Clamp(values.Sum(v => (long)Math.Max(v, 0)), 0, uint.MaxValue);
+
+        var xp = Sum(players.Select(p => p.TotalDxp));
+
+        return EgoNetBinary.Dictionary(
+            EgoNetBinary.Dict("Details",
+                EgoNetBinary.Si64("TeamId", CommunityTeamId),
+                EgoNetBinary.Dstr("TeamTag", CommunityTeamTag),
+                EgoNetBinary.Dstr("TeamName", CommunityTeamName),
+                EgoNetBinary.Bool("HasLivery", false),
+                EgoNetBinary.Blob("LiveryData", []),
+                EgoNetBinary.Bool("IsOwner", false),
+                EgoNetBinary.Ui32("XP", xp),
+                EgoNetBinary.Ui32("XPTouring", Sum(players.Select(p => p.TouringXp))),
+                EgoNetBinary.Ui32("XPEndurance", Sum(players.Select(p => p.EnduranceXp))),
+                EgoNetBinary.Ui32("XPOpenWheel", Sum(players.Select(p => p.OpenWheelXp))),
+                EgoNetBinary.Ui32("XPTuner", Sum(players.Select(p => p.TunerXp))),
+                EgoNetBinary.Ui32("XPStreet", Sum(players.Select(p => p.StreetXp))),
+                EgoNetBinary.Ui32("TotalMembers", (uint)players.Count),
+                EgoNetBinary.Ui32("TeamRank", 1),
+                EgoNetBinary.Ui32("TeamXPLevel", (uint)GetTeamLevel(xp))));
+    }
+
+    private static byte[] BuildTeamMembers(IReadOnlyList<GridAutosportPlayerSnapshot> players, int pageNumber, int pageSize)
+    {
+        pageSize = pageSize > 0 ? pageSize : DefaultTeamPageSize;
+        pageNumber = Math.Max(pageNumber, 1);
+        var pageCount = Math.Max(1, (players.Count + pageSize - 1) / pageSize);
+
+        var members = players
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(player => EgoNetBinary.DictValue(
+                EgoNetBinary.Dict("Presence",
+                    EgoNetBinary.Ui64("SteamId", BuildStableSteamId(player.DisplayName)),
+                    EgoNetBinary.Dstr("Name", player.DisplayName),
+                    EgoNetBinary.Si64("EgonetId", player.PlayerProfileId)),
+                EgoNetBinary.Si16("ClubPosition", 0),
+                EgoNetBinary.Si32("XPLevel", player.XpLevel)))
+            .ToArray();
+
+        return EgoNetBinary.Dictionary(
+            EgoNetBinary.Dict("Members",
+                EgoNetBinary.Vector("MemberList", members),
+                EgoNetBinary.Si32("PageCount", pageCount)));
+    }
+
     public static RaceNetResponse? TryBuild(
     string functionName,
     CapturedBody body,

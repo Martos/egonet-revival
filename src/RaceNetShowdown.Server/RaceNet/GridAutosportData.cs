@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public static class GridAutosportData
+public static partial class GridAutosportData
 {
     public enum GridAutosportDisciplineID
     {

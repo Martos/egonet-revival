@@ -7,183 +7,69 @@ public static class GridAutosportRandomizer
 {
     private static readonly Random Rnd = new Random();
 
-    private static readonly HashSet<GridAutosportTrackModel> SprintAllowedTracks = new()
-    {
-        GridAutosportTrackModel.CoteDAzurRoute0,
-        GridAutosportTrackModel.CoteDAzurRoute1,
-        GridAutosportTrackModel.CoteDAzurRoute2,
-        GridAutosportTrackModel.CoteDAzurRoute3,
-        GridAutosportTrackModel.CoteDAzurRoute4,
-        GridAutosportTrackModel.CoteDAzurRoute5,
-        GridAutosportTrackModel.HongKongRoute0,
-        GridAutosportTrackModel.HongKongRoute1,
-        GridAutosportTrackModel.HongKongRoute2,
-        GridAutosportTrackModel.HongKongRoute3,
-        GridAutosportTrackModel.HongKongRoute4,
-        GridAutosportTrackModel.HongKongRoute5,
-        GridAutosportTrackModel.OkutamaP2pRoute0,
-        GridAutosportTrackModel.OkutamaP2pRoute1,
-        GridAutosportTrackModel.OkutamaP2pRoute2,
-        GridAutosportTrackModel.OkutamaP2pRoute3,
-        GridAutosportTrackModel.OkutamaP2pRoute4,
-        GridAutosportTrackModel.OkutamaP2pRoute5,
-        GridAutosportTrackModel.CaliforniaRoute0,
-        GridAutosportTrackModel.CaliforniaRoute1,
-        GridAutosportTrackModel.CaliforniaRoute2,
-        GridAutosportTrackModel.CaliforniaRoute3,
-        GridAutosportTrackModel.CaliforniaRoute4,
-        GridAutosportTrackModel.CaliforniaRoute5
-    };
-
-    private static readonly HashSet<GridAutosportTrackModel> DriftAllowedTracks = new()
-    {
-        GridAutosportTrackModel.CallahanOvalRoute5,
-        GridAutosportTrackModel.BrandsHatchRoute5
-    };
+    // Track model -> available conditions, from LocationToTracksMap.
+    private static readonly IReadOnlyDictionary<GridAutosportTrackModel, List<GridAutosportTrackModelConditions>> TrackConditions =
+        LocationToTracksMap.Values
+            .SelectMany(tracks => tracks)
+            .Where(t => t.Conditions.Count > 0)
+            .ToDictionary(t => t.Track, t => t.Conditions);
 
     public static GridAutoSportChallengeRace[] GenerateRandomRaces(int totalRaces = 6)
     {
         if (totalRaces < 5)
             throw new ArgumentException("Sono necessarie almeno 5 gare.");
 
-        var disciplines = new List<GridAutosportDisciplineID>
-        {
-            GridAutosportDisciplineID.Touring,
-            GridAutosportDisciplineID.Endurance,
-            GridAutosportDisciplineID.Street,
-            GridAutosportDisciplineID.Tuner,
-            GridAutosportDisciplineID.Openwheel
-        };
-
-        var allDisciplines = Enum.GetValues(typeof(GridAutosportDisciplineID))
-                                 .Cast<GridAutosportDisciplineID>()
-                                 .ToArray();
-
+        // One race per discipline, then fill the remaining slots randomly.
+        var allDisciplines = DisciplineToVehicleClasses.Keys.ToArray();
+        var disciplines = allDisciplines.ToList();
         while (disciplines.Count < totalRaces)
-        {
-            disciplines.Add(allDisciplines[Rnd.Next(allDisciplines.Length)]);
-        }
+            disciplines.Add(Pick(allDisciplines));
+        // Always Touring, Endurance, Openwheel, Tuner, Street (enum order).
+        disciplines = disciplines.OrderBy(d => (int)d).ToList();
 
-        disciplines = disciplines.OrderBy(_ => Rnd.Next()).ToList();
-
-        var allConditions = Enum.GetValues(typeof(GridAutosportTrackModelConditions))
-                                .Cast<GridAutosportTrackModelConditions>()
-                                .ToArray();
-
+        var usedTracks = new HashSet<GridAutosportTrackModel>();
         var generatedRaces = new List<GridAutoSportChallengeRace>();
 
         for (int i = 0; i < totalRaces; i++)
         {
-            int raceId = i + 1;
             var discipline = disciplines[i];
-            var raceType = GetRandomRaceType(discipline);
+            var vehicleClass = PickVehicleClass(discipline);
+            var raceType = Pick(VehicleClassToRaceTypes[vehicleClass].Where(RaceTypeToTracks.ContainsKey).ToArray());
+            var trackModel = PickTrack(raceType, usedTracks);
+            var condition = Pick(TrackConditions[trackModel]);
+            usedTracks.Add(trackModel);
 
-            GridAutosportTrackModelConditions condition;
-            GridAutosportTrackModel trackModel;
-
-            do
-            {
-                condition = allConditions[Rnd.Next(allConditions.Length)];
-                trackModel = GridAutosportData.GetTrackModel(condition);
-            }
-            while (!IsTrackValidForRace(discipline, raceType, trackModel));
-
-            var vehicleClass = GetRandomVehicleClass(discipline, raceType);
-
-            bool isEnduranceParam = (discipline == GridAutosportDisciplineID.Endurance);
-            int scoreParam1 = (Rnd.Next(2) == 0) ? 0 : 98112;
+            bool specialRace = discipline == GridAutosportDisciplineID.Endurance;
+            int personalBest = (Rnd.Next(2) == 0) ? 0 : 98112;
 
             generatedRaces.Add(new GridAutoSportChallengeRace(
-                raceId, false, discipline, condition, raceType, 0, -1, vehicleClass, 0, 0,
-                isEnduranceParam, 1, -1, scoreParam1, 95776, 101373, 107599, 116333
+                i + 1, false, discipline, condition, raceType, 0, -1, vehicleClass, 0, 0,
+                specialRace, 1, -1, personalBest, 95776, 101373, 107599, 116333
             ));
         }
 
         return generatedRaces.ToArray();
     }
 
-    private static bool IsTrackValidForRace(
-        GridAutosportDisciplineID discipline,
-        GridAutosportRaceType raceType,
-        GridAutosportTrackModel trackModel)
+    // A class of the discipline that has at least one vehicle and one playable race type.
+    private static GridAutosportVehicleClassID PickVehicleClass(GridAutosportDisciplineID discipline)
     {
-        if (raceType == GridAutosportRaceType.Drift)
-        {
-            return DriftAllowedTracks.Contains(trackModel);
-        }
+        var candidates = DisciplineToVehicleClasses[discipline]
+            .Where(c => VehicleClassToVehicles.ContainsKey(c)
+                        && VehicleClassToRaceTypes.TryGetValue(c, out var types)
+                        && types.Any(t => RaceTypeToTracks.ContainsKey(t)))
+            .ToArray();
 
-        if (DriftAllowedTracks.Contains(trackModel))
-        {
-            return false;
-        }
-
-        if (raceType == GridAutosportRaceType.Sprint)
-        {
-            return SprintAllowedTracks.Contains(trackModel);
-        }
-
-        if (discipline == GridAutosportDisciplineID.Endurance || raceType == GridAutosportRaceType.Endurance)
-        {
-            return !SprintAllowedTracks.Contains(trackModel);
-        }
-
-        return true;
+        return Pick(candidates);
     }
 
-    private static GridAutosportRaceType GetRandomRaceType(GridAutosportDisciplineID discipline)
+    // A track valid for the race type, preferring tracks not already used in this set.
+    private static GridAutosportTrackModel PickTrack(GridAutosportRaceType raceType, HashSet<GridAutosportTrackModel> usedTracks)
     {
-        var validTypes = discipline switch
-        {
-            GridAutosportDisciplineID.Endurance =>
-                new[] { GridAutosportRaceType.Endurance },
-
-            GridAutosportDisciplineID.Openwheel =>
-                new[] { GridAutosportRaceType.Race, GridAutosportRaceType.TimeAttack },
-
-            GridAutosportDisciplineID.Tuner =>
-                new[] { GridAutosportRaceType.TimeAttack, GridAutosportRaceType.Drift, GridAutosportRaceType.Race },
-
-            GridAutosportDisciplineID.Street =>
-                new[] { GridAutosportRaceType.Race, GridAutosportRaceType.Sprint },
-
-            _ =>
-                new[] { GridAutosportRaceType.Race, GridAutosportRaceType.Sprint }
-        };
-
-        return validTypes[Rnd.Next(validTypes.Length)];
+        var valid = RaceTypeToTracks[raceType].Where(TrackConditions.ContainsKey).ToArray();
+        var unused = valid.Where(t => !usedTracks.Contains(t)).ToArray();
+        return Pick(unused.Length > 0 ? unused : valid);
     }
 
-    private static GridAutosportVehicleClassID GetRandomVehicleClass(
-        GridAutosportDisciplineID discipline,
-        GridAutosportRaceType raceType)
-    {
-        if (raceType == GridAutosportRaceType.Drift)
-        {
-            GridAutosportVehicleClassID[] driftClasses = [GridAutosportVehicleClassID.C1Drift, GridAutosportVehicleClassID.C2Drift];
-            return driftClasses[Rnd.Next(driftClasses.Length)];
-        }
-
-        var validClasses = discipline switch
-        {
-            GridAutosportDisciplineID.Touring =>
-                new[] { GridAutosportVehicleClassID.CatATouring, GridAutosportVehicleClassID.CatBTouring, GridAutosportVehicleClassID.CatCTouring },
-
-            GridAutosportDisciplineID.Endurance =>
-                new[] { GridAutosportVehicleClassID.EnduranceGtGroup1, GridAutosportVehicleClassID.EnduranceGtGroup2, GridAutosportVehicleClassID.EnduranceGtUltimate },
-
-            GridAutosportDisciplineID.Openwheel =>
-                new[] { GridAutosportVehicleClassID.FormulaA, GridAutosportVehicleClassID.FormulaB, GridAutosportVehicleClassID.FormulaC },
-
-            GridAutosportDisciplineID.Tuner =>
-                new[] { GridAutosportVehicleClassID.Modified, GridAutosportVehicleClassID.SuperModified, GridAutosportVehicleClassID.Jdm },
-
-            GridAutosportDisciplineID.Street =>
-                new[] { GridAutosportVehicleClassID.HotHatch, GridAutosportVehicleClassID.Supercar, GridAutosportVehicleClassID.Hypercar },
-
-            _ =>
-                new[] { GridAutosportVehicleClassID.CatATouring }
-        };
-
-        return validClasses[Rnd.Next(validClasses.Length)];
-    }
+    private static T Pick<T>(IReadOnlyList<T> items) => items[Rnd.Next(items.Count)];
 }

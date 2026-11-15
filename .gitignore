@@ -36,3 +36,6 @@ external/
 # OS files
 Thumbs.db
 desktop.ini
+
+database.xml
+database_*.xml

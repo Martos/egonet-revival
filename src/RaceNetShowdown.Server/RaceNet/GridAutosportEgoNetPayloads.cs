@@ -39,12 +39,14 @@ internal static class GridAutosportEgoNetPayloads
     }
     private static byte[] BuildChallengeRaces()
     {
+        // A new random event every time the game loads the challenge list.
+        var challengeEvent = GridAutosportRandomizer.GenerateNewEvent(DateTimeOffset.UtcNow);
         return EgoNetBinary.Dictionary(
-            EgoNetBinary.Si64("RaceNetId", 798),
-            EgoNetBinary.Tutc("Expires", DateTimeOffset.UtcNow.AddDays(7)),
+            EgoNetBinary.Si64("RaceNetId", challengeEvent.EventId),
+            EgoNetBinary.Tutc("Expires", challengeEvent.Expires),
             EgoNetBinary.Vector(
                 "Races",
-                GridAutosportRandomizer.GenerateRandomRaces(5).Select(BuildChallengeRace).ToArray()));
+                challengeEvent.Races.Select(BuildChallengeRace).ToArray()));
     }
 
     private static RaceNetResponse Html(byte[] body, IReadOnlyDictionary<string, string> headers)
@@ -188,6 +190,19 @@ internal static class GridAutosportEgoNetPayloads
     {
         switch (functionName)
         {
+            case "LoginService.Login":
+            {
+                // The Steam ID in the login ticket is the real one: Steam uses it for the online status
+                // shown next to each club member, so the member list must carry it.
+                var steamId = EgoNetRequestParser.ReadSteamIdFromTicket(body);
+                if (steamId is not null && session is not null)
+                {
+                    await store.SaveGridAutosportSteamIdAsync(session, steamId.Value, cancellationToken);
+                }
+
+                return TryBuild(functionName, body, session, headers);
+            }
+
             case "DataMining.Profile":
             {
                 var profile = EgoNetRequestParser.ReadGridAutosportProfile(body);
@@ -260,7 +275,7 @@ internal static class GridAutosportEgoNetPayloads
             .Take(pageSize)
             .Select(player => EgoNetBinary.DictValue(
                 EgoNetBinary.Dict("Presence",
-                    EgoNetBinary.Ui64("SteamId", BuildStableSteamId(player.DisplayName)),
+                    EgoNetBinary.Ui64("SteamId", player.SteamId ?? BuildStableSteamId(player.DisplayName)),
                     EgoNetBinary.Dstr("Name", player.DisplayName),
                     EgoNetBinary.Si64("EgonetId", player.PlayerProfileId)),
                 EgoNetBinary.Si16("ClubPosition", 0),

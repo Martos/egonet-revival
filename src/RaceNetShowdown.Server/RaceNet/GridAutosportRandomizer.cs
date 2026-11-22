@@ -5,7 +5,35 @@ using static GridAutosportData;
 
 public static class GridAutosportRandomizer
 {
-    private static readonly Random Rnd = new Random();
+    // Seeded per generation so the same event id always produces the same races.
+    [ThreadStatic] private static Random? _rnd;
+    private static Random Rnd => _rnd ??= new Random();
+
+    /// <summary>Chance that a race uses a single-make cup class instead of a main class of its discipline.</summary>
+    private const double CupClassChance = 0.15;
+
+    public sealed record ChallengeEvent(long EventId, DateTimeOffset Expires, GridAutoSportChallengeRace[] Races);
+
+    private static long _lastEventId;
+
+    /// <summary>
+    /// A brand new event, generated every time the game loads the challenge list.
+    /// Event id = Unix seconds (strictly increasing), race ids = event id * 10 + index, so races
+    /// from different loads never share an id.
+    /// </summary>
+    public static ChallengeEvent GenerateNewEvent(DateTimeOffset now, int totalRaces = 6)
+    {
+        long eventId;
+        long last;
+        do
+        {
+            last = Interlocked.Read(ref _lastEventId);
+            eventId = Math.Max(now.ToUnixTimeSeconds(), last + 1);
+        }
+        while (Interlocked.CompareExchange(ref _lastEventId, eventId, last) != last);
+
+        return new ChallengeEvent(eventId, now.AddDays(7), GenerateRandomRaces(totalRaces, firstRaceId: eventId * 10));
+    }
 
     // Track model -> available conditions, from LocationToTracksMap.
     private static readonly IReadOnlyDictionary<GridAutosportTrackModel, List<GridAutosportTrackModelConditions>> TrackConditions =
@@ -14,17 +42,28 @@ public static class GridAutosportRandomizer
             .Where(t => t.Conditions.Count > 0)
             .ToDictionary(t => t.Track, t => t.Conditions);
 
-    public static GridAutoSportChallengeRace[] GenerateRandomRaces(int totalRaces = 6)
-    {
-        if (totalRaces < 5)
-            throw new ArgumentException("Sono necessarie almeno 5 gare.");
+    // Party mode: the original server always used Checkpoint with a party class (racing_style 8).
+    // Eliminator and Demolition Derby are left out: no real data to build their targets from.
+    private static readonly GridAutosportVehicleClassID[] PartyCheckpointClasses = VehicleClassToRaceTypes
+        .Where(entry => !VehicleClassToDiscipline.ContainsKey(entry.Key)
+                        && entry.Value.Contains(GridAutosportRaceType.Checkpoint))
+        .Select(entry => entry.Key)
+        .OrderBy(c => (int)c)
+        .ToArray();
 
-        // One race per discipline, then fill the remaining slots randomly.
-        var allDisciplines = DisciplineToVehicleClasses.Keys.ToArray();
+    public static GridAutoSportChallengeRace[] GenerateRandomRaces(int totalRaces = 6, int? seed = null, long firstRaceId = 1)
+    {
+        // One race per discipline (the five main ones + Party), then fill the remaining slots randomly.
+        var allDisciplines = DisciplineToVehicleClasses.Keys.Append(GridAutosportDisciplineID.Party).ToArray();
+        if (totalRaces < allDisciplines.Length)
+            throw new ArgumentException($"Sono necessarie almeno {allDisciplines.Length} gare (una per disciplina).");
+
+        _rnd = seed is int s ? new Random(s) : new Random();
+
         var disciplines = allDisciplines.ToList();
         while (disciplines.Count < totalRaces)
             disciplines.Add(Pick(allDisciplines));
-        // Always Touring, Endurance, Openwheel, Tuner, Street (enum order).
+        // Always Touring, Endurance, Openwheel, Tuner, Street, Party (enum order).
         disciplines = disciplines.OrderBy(d => (int)d).ToList();
 
         var usedTracks = new HashSet<GridAutosportTrackModel>();
@@ -33,8 +72,11 @@ public static class GridAutosportRandomizer
         for (int i = 0; i < totalRaces; i++)
         {
             var discipline = disciplines[i];
-            var vehicleClass = PickVehicleClass(discipline);
-            var raceType = Pick(VehicleClassToRaceTypes[vehicleClass].Where(RaceTypeToTracks.ContainsKey).ToArray());
+            bool party = discipline == GridAutosportDisciplineID.Party;
+            var vehicleClass = party ? Pick(PartyCheckpointClasses) : PickVehicleClass(discipline);
+            var raceType = party
+                ? GridAutosportRaceType.Checkpoint
+                : Pick(VehicleClassToRaceTypes[vehicleClass].Where(RaceTypeToTracks.ContainsKey).ToArray());
             var trackModel = PickTrack(raceType, usedTracks);
             var condition = Pick(TrackConditions[trackModel]);
             usedTracks.Add(trackModel);
@@ -44,7 +86,7 @@ public static class GridAutosportRandomizer
 
             // The original server sent the class tier (vehicle_class.tier_id) as VehicleTierId.
             generatedRaces.Add(new GridAutoSportChallengeRace(
-                i + 1, targets.HigherIsBetter, discipline, condition, raceType, 0,
+                firstRaceId + i, targets.HigherIsBetter, discipline, condition, raceType, 0,
                 VehicleClassToTier[vehicleClass], vehicleClass, 0, 0,
                 specialRace, 1, -1, targets.PersonalBest,
                 targets.Platinum, targets.Gold, targets.Silver, targets.Bronze
@@ -87,6 +129,13 @@ public static class GridAutosportRandomizer
     private const double EnduranceSeconds = 390;
     private const double EnduranceGoldRatio = 0.964, EnduranceSilverRatio = 0.934, EnduranceBronzeRatio = 0.8955;
 
+    // Party Checkpoint (race type 22) is higher-is-better with the same distance-like score, ~ speed x 220 s:
+    //   McLaren F1 party, MontTremblantRoute1 -> 11335 (gold 8104, silver 4829)
+    //   Atom V8 party,    AlgarveRoute0       -> 10285 (gold 9592, silver 7652)
+    // Gold / silver are the averages of the two events; bronze was cut off in the logs (extrapolated).
+    private const double CheckpointSeconds = 220;
+    private const double CheckpointGoldRatio = 0.824, CheckpointSilverRatio = 0.585, CheckpointBronzeRatio = 0.40;
+
     // Drift is scored in points (higher is better); obj_drift_score uses 50k..200k thresholds. No real data.
     private const int DriftPlatinumMin = 150_000;
     private const int DriftPlatinumMax = 200_000;
@@ -113,6 +162,12 @@ public static class GridAutosportRandomizer
             mph *= CitySpeedFactor;
         double metersPerSecond = mph * MphToMetersPerSecond;
         double jitter = 0.97 + Rnd.NextDouble() * 0.06; // ±3% so equal setups don't get identical targets
+
+        if (raceType == GridAutosportRaceType.Checkpoint)
+        {
+            long platinum = (long)Math.Round(metersPerSecond * CheckpointSeconds * jitter);
+            return HigherIsBetterTargets(platinum, CheckpointGoldRatio, CheckpointSilverRatio, CheckpointBronzeRatio, step: 1);
+        }
 
         if (raceType == GridAutosportRaceType.Endurance)
         {
@@ -162,6 +217,7 @@ public static class GridAutosportRandomizer
     private static long RoundTo(double value, int step) => (long)Math.Round(value / step) * step;
 
     // A class of the discipline that has at least one vehicle and one playable race type.
+    // Main classes are picked most of the time; single-make cups only with CupClassChance.
     private static GridAutosportVehicleClassID PickVehicleClass(GridAutosportDisciplineID discipline)
     {
         var candidates = DisciplineToVehicleClasses[discipline]
@@ -170,7 +226,14 @@ public static class GridAutosportRandomizer
                         && types.Any(t => RaceTypeToTracks.ContainsKey(t)))
             .ToArray();
 
-        return Pick(candidates);
+        var cups = candidates.Where(CupVehicleClasses.Contains).ToArray();
+        var main = candidates.Where(c => !CupVehicleClasses.Contains(c)).ToArray();
+
+        if (main.Length == 0)
+            return Pick(cups);
+        if (cups.Length == 0)
+            return Pick(main);
+        return Rnd.NextDouble() < CupClassChance ? Pick(cups) : Pick(main);
     }
 
     // A track valid for the race type, preferring tracks not already used in this set.

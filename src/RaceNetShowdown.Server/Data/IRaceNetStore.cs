@@ -87,6 +87,12 @@ public interface IRaceNetStore
         GridAutosportProfileSubmission submission,
         CancellationToken cancellationToken);
 
+    /// <summary>Stores the player's real Steam ID (from the login ticket); creates the profile row if missing.</summary>
+    Task SaveGridAutosportSteamIdAsync(
+        RaceNetSessionInfo session,
+        ulong steamId,
+        CancellationToken cancellationToken);
+
     /// <summary>All GRID Autosport players with a saved online profile, highest XP first.</summary>
     Task<IReadOnlyList<GridAutosportPlayerSnapshot>> GetGridAutosportPlayersAsync(
         CancellationToken cancellationToken);

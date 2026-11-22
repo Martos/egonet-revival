@@ -237,6 +237,7 @@ public sealed class LocalRaceNetStore : IRaceNetStore
     {
         if (submission.TotalDxp >= 0)
         {
+            GridAutosportPlayersByName.TryGetValue(session.DisplayName, out var existing);
             GridAutosportPlayersByName[session.DisplayName] = new GridAutosportPlayerSnapshot(
                 session.PlayerProfileId,
                 session.DisplayName,
@@ -246,9 +247,23 @@ public sealed class LocalRaceNetStore : IRaceNetStore
                 submission.OpenWheelXp,
                 submission.TunerXp,
                 submission.StreetXp,
-                GridAutosportData.GetOnlineLevel(submission.TotalDxp));
+                GridAutosportData.GetOnlineLevel(submission.TotalDxp),
+                existing?.SteamId);
         }
 
+        return Task.CompletedTask;
+    }
+
+    public Task SaveGridAutosportSteamIdAsync(
+        RaceNetSessionInfo session,
+        ulong steamId,
+        CancellationToken cancellationToken)
+    {
+        GridAutosportPlayersByName.AddOrUpdate(
+            session.DisplayName,
+            _ => new GridAutosportPlayerSnapshot(
+                session.PlayerProfileId, session.DisplayName, 0, 0, 0, 0, 0, 0, GridAutosportData.GetOnlineLevel(0), steamId),
+            (_, existing) => existing with { SteamId = steamId });
         return Task.CompletedTask;
     }
 

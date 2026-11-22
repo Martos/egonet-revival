@@ -97,7 +97,8 @@ public sealed record GridAutosportPlayerSnapshot(
     int OpenWheelXp,
     int TunerXp,
     int StreetXp,
-    int XpLevel);
+    int XpLevel,
+    ulong? SteamId);
 
 public sealed record Grid2RaceParticipant(
     ulong SteamId,

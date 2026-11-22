@@ -284,6 +284,9 @@ public sealed class GridAutosportProfileRecord
 
     public int XpLevel { get; set; }
 
+    /// <summary>Real Steam ID from the login ticket (null until the player logs in after this was added).</summary>
+    public long? SteamId { get; set; }
+
     public DateTimeOffset UpdatedAt { get; set; }
 }
 

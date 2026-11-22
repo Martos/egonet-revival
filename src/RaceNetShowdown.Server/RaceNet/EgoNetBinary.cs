@@ -428,6 +428,63 @@ internal static class EgoNetRequestParser
     }
 
     /// <summary>
+    /// Real Steam ID of the player from the LoginService.Login "SteamTicket" blob.
+    /// The ticket embeds the 64-bit Steam ID little-endian (offset 30 in every captured ticket);
+    /// we scan for an individual public account id (upper 32 bits 0x01100001) instead of trusting the offset.
+    /// </summary>
+    public static ulong? ReadSteamIdFromTicket(CapturedBody body)
+    {
+        if (body.BodyBytes.Length == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var stream = new MemoryStream(body.BodyBytes, writable: false);
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            if (ReadTag(reader) != "vdic")
+            {
+                return null;
+            }
+
+            var fields = reader.ReadInt32();
+            for (var i = 0; i < fields; i++)
+            {
+                var name = ReadName(reader);
+                var tag = ReadTag(reader);
+                if (name == "SteamTicket" && tag == "blob")
+                {
+                    return FindSteamId(ReadBlob(reader));
+                }
+
+                SkipValue(reader, tag);
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static ulong? FindSteamId(byte[] ticket)
+    {
+        const uint IndividualPublicAccountHigh = 0x01100001;
+        for (var offset = 0; offset + 8 <= ticket.Length; offset++)
+        {
+            if (BitConverter.ToUInt32(ticket, offset + 4) == IndividualPublicAccountHigh &&
+                BitConverter.ToUInt32(ticket, offset) != 0)
+            {
+                return BitConverter.ToUInt64(ticket, offset);
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// GRID Autosport DataMining.Profile: Statistics.Tracking.SaveGameId,
     /// Statistics.Multiplayer.TotalDXP and Statistics.Multiplayer.Discipline.{Touring,Endurance,OpenWheel,Tuner,Street}XP.
     /// Returns null when the body has no Multiplayer section (sent before the online profile exists).
@@ -1373,7 +1430,9 @@ internal static class EgoNetRequestParser
 
             case "dstr":
             case "blob":
-                reader.BaseStream.Position += reader.ReadInt32();
+                // Read the length first: "Position += ReadInt32()" would add it to the position *before* the length field.
+                var length = reader.ReadInt32();
+                reader.BaseStream.Position += length;
                 break;
 
             case "si32":

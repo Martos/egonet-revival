@@ -809,6 +809,45 @@ public sealed class EntityFrameworkRaceNetStore(
             level);
     }
 
+    public async Task SaveGridAutosportSteamIdAsync(
+        RaceNetSessionInfo session,
+        ulong steamId,
+        CancellationToken cancellationToken)
+    {
+        if (session.PlayerProfileId <= 0 || steamId == 0)
+        {
+            return;
+        }
+
+        var value = unchecked((long)steamId);
+        var record = await dbContext.GridAutosportProfiles
+            .FirstOrDefaultAsync(row => row.PlayerProfileId == session.PlayerProfileId, cancellationToken);
+
+        if (record is not null && record.SteamId == value)
+        {
+            return;
+        }
+
+        if (record is null)
+        {
+            record = new GridAutosportProfileRecord
+            {
+                PlayerProfileId = session.PlayerProfileId,
+                XpLevel = GridAutosportData.GetOnlineLevel(0),
+                UpdatedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.GridAutosportProfiles.Add(record);
+        }
+
+        record.SteamId = value;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation(
+            "GRID Autosport Steam ID saved for {Player}: {SteamId}",
+            session.DisplayName,
+            steamId);
+    }
+
     public async Task<IReadOnlyList<GridAutosportPlayerSnapshot>> GetGridAutosportPlayersAsync(
         CancellationToken cancellationToken)
     {
@@ -831,7 +870,8 @@ public sealed class EntityFrameworkRaceNetStore(
                 row.profile.OpenWheelXp,
                 row.profile.TunerXp,
                 row.profile.StreetXp,
-                row.profile.XpLevel))
+                row.profile.XpLevel,
+                row.profile.SteamId is long steamId ? unchecked((ulong)steamId) : null))
             .OrderByDescending(player => player.TotalDxp)
             .ThenBy(player => player.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -2113,11 +2153,21 @@ public sealed class EntityFrameworkRaceNetStore(
                     "TunerXp" INTEGER NOT NULL,
                     "StreetXp" INTEGER NOT NULL,
                     "XpLevel" INTEGER NOT NULL,
+                    "SteamId" INTEGER NULL,
                     "UpdatedAt" TEXT NOT NULL,
                     CONSTRAINT "FK_GridAutosportProfiles_PlayerProfiles_PlayerProfileId" FOREIGN KEY ("PlayerProfileId") REFERENCES "PlayerProfiles" ("Id") ON DELETE RESTRICT
                 );
                 """,
                 cancellationToken);
+            var hasSteamIdColumn = await dbContext.Database
+                .SqlQueryRaw<int>("""SELECT COUNT(*) AS "Value" FROM pragma_table_info('GridAutosportProfiles') WHERE name = 'SteamId'""")
+                .SingleAsync(cancellationToken);
+            if (hasSteamIdColumn == 0)
+            {
+                await dbContext.Database.ExecuteSqlRawAsync(
+                    """ALTER TABLE "GridAutosportProfiles" ADD COLUMN "SteamId" INTEGER NULL;""",
+                    cancellationToken);
+            }
             await dbContext.Database.ExecuteSqlRawAsync(
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS "IX_GridAutosportProfiles_PlayerProfileId"
@@ -2420,11 +2470,18 @@ public sealed class EntityFrameworkRaceNetStore(
                         [TunerXp] int NOT NULL,
                         [StreetXp] int NOT NULL,
                         [XpLevel] int NOT NULL,
+                        [SteamId] bigint NULL,
                         [UpdatedAt] datetimeoffset NOT NULL,
                         CONSTRAINT [PK_GridAutosportProfiles] PRIMARY KEY ([Id]),
                         CONSTRAINT [FK_GridAutosportProfiles_PlayerProfiles_PlayerProfileId] FOREIGN KEY ([PlayerProfileId]) REFERENCES [PlayerProfiles] ([Id]) ON DELETE NO ACTION
                     );
                 END
+                """,
+                cancellationToken);
+            await dbContext.Database.ExecuteSqlRawAsync(
+                """
+                IF COL_LENGTH(N'GridAutosportProfiles', N'SteamId') IS NULL
+                    ALTER TABLE [GridAutosportProfiles] ADD [SteamId] bigint NULL;
                 """,
                 cancellationToken);
             await dbContext.Database.ExecuteSqlRawAsync(

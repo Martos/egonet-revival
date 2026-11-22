@@ -9,7 +9,9 @@ public static partial class GridAutosportData
         Endurance = 3,
         Openwheel = 4,
         Tuner = 5,
-        Street = 6
+        Street = 6,
+        /// <summary>Party mode (racing_style 8). The original server sent it as the 6th challenge race.</summary>
+        Party = 8
     }
 
     public enum GridAutosportVehicleClassID
@@ -730,6 +732,24 @@ public static partial class GridAutosportData
             level = i + 1;
         return level;
     }
+
+    /// <summary>Single-make cup classes (vehicle_class.type_string_id ending in "_cup").</summary>
+    public static readonly HashSet<GridAutosportVehicleClassID> CupVehicleClasses = new()
+    {
+        GridAutosportVehicleClassID.CuBmwE30M3,
+        GridAutosportVehicleClassID.CuClassicMiniCup,
+        GridAutosportVehicleClassID.CuMiniCup,
+        GridAutosportVehicleClassID.CuShelbyCup,
+        GridAutosportVehicleClassID.CuFordGt40Cup,
+        GridAutosportVehicleClassID.CuMazda787bCup,
+        GridAutosportVehicleClassID.CuCaterhamLolaCup,
+        GridAutosportVehicleClassID.CuArielAtomV8Cup,
+        GridAutosportVehicleClassID.CuNissanSkylineCup,
+        GridAutosportVehicleClassID.CuHondaNsxCup,
+        GridAutosportVehicleClassID.CuLanciaDeltaCup,
+        GridAutosportVehicleClassID.CuAlfaRomeo4cCup,
+        GridAutosportVehicleClassID.CuMclarenF1Cup
+    };
 
     public static bool IsDriftClass(this GridAutosportVehicleClassID vehicleClass)
     {
